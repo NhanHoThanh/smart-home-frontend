@@ -1,287 +1,251 @@
-// import React, { Component } from "react";
-// import {
-//   View,
-//   Text,
-//   SafeAreaView,
-//   TouchableOpacity,
-//   StyleSheet,
-//
-//   StatusBar,
-// } from "react-native";
+import React, { useState } from "react";
 import {
   View,
   Text,
   Image,
-  Pressable,
   TextInput,
   TouchableOpacity,
   ImageBackground,
   Keyboard,
   TouchableWithoutFeedback,
+  StyleSheet,
+  Dimensions,
 } from "react-native";
-import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import COLORS from "../../colors";
 import { Ionicons } from "@expo/vector-icons";
-import Checkbox from "expo-checkbox";
 import Button from "../../Button";
+
+const { width } = Dimensions.get("window");
+
 const Login = ({ navigation }) => {
   const [isPasswordShown, setIsPasswordShown] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = () => {
+    // Temporary login logic without backend
+    if (email.length > 0 && password.length > 0) {
+      navigation.navigate("MyTabs");
+    }
+  };
 
   return (
     <ImageBackground
       source={require("../img/background.png")}
       resizeMode="cover"
-      style={{
-        height: "100%",
-        width: "100%",
-      }}>
-      <SafeAreaView style={{ flex: 1, justifyContent: "center" }}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <View
-            style={{
-              flex: 1,
-              marginHorizontal: 22,
-            }}>
-            <View
-              style={{
-                marginVertical: 22,
-                justifyContent: "center",
-                alignItems: "center",
-              }}>
-              <Text
-                style={{
-                  fontSize: 16,
-                  color: COLORS.black,
-                }}>
-                {/* Chào mừng bạn! 👋 */}
-              </Text>
+      style={styles.backgroundImage}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.content}>
+            <View style={styles.header}>
+              <Text style={styles.welcomeText}>Welcome Back! 👋</Text>
+              <Text style={styles.title}>LOGIN</Text>
             </View>
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: "bold",
-                marginVertical: 12,
-                color: COLORS.black,
-                justifyContent: "center",
-              }}>
-              ĐĂNG NHẬP
-            </Text>
 
-            <View style={{ marginBottom: 12 }}>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: 400,
-                  marginVertical: 8,
-                }}>
-                Địa chỉ email
-              </Text>
-
-              <View
-                style={{
-                  width: "100%",
-                  height: 48,
-                  borderColor: COLORS.black,
-                  borderWidth: 1,
-                  borderRadius: 8,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingLeft: 22,
-                }}>
-                <TextInput
-                  placeholder="Nhập địa chỉ email"
-                  placeholderTextColor={COLORS.black}
-                  keyboardType="email-address"
-                  style={{
-                    width: "100%",
-                  }}
-                />
+            <View style={styles.form}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Email Address</Text>
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    placeholder="Enter your email"
+                    placeholderTextColor={COLORS.grey[400]}
+                    keyboardType="email-address"
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                  />
+                </View>
               </View>
-            </View>
 
-            <View style={{ marginBottom: 12 }}>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: 400,
-                  marginVertical: 8,
-                }}>
-                Mật khẩu
-              </Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Password</Text>
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    placeholder="Enter your password"
+                    placeholderTextColor={COLORS.grey[400]}
+                    secureTextEntry={!isPasswordShown}
+                    style={styles.input}
+                    value={password}
+                    onChangeText={setPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setIsPasswordShown(!isPasswordShown)}
+                    style={styles.eyeIcon}>
+                    <Ionicons
+                      name={isPasswordShown ? "eye-off" : "eye"}
+                      size={24}
+                      color={COLORS.grey[400]}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-              <View
-                style={{
-                  width: "100%",
-                  height: 48,
-                  borderColor: COLORS.black,
-                  borderWidth: 1,
-                  borderRadius: 8,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingLeft: 22,
-                }}>
-                <TextInput
-                  placeholder="Nhập mật khẩu"
-                  placeholderTextColor={COLORS.black}
-                  secureTextEntry={isPasswordShown}
-                  style={{
-                    width: "100%",
-                  }}
-                />
+              <TouchableOpacity style={styles.forgotPassword}>
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity
-                  onPress={() => setIsPasswordShown(!isPasswordShown)}
-                  style={{
-                    position: "absolute",
-                    right: 12,
-                  }}>
-                  {isPasswordShown == true ? (
-                    <Ionicons name="eye-off" size={24} color={COLORS.black} />
-                  ) : (
-                    <Ionicons name="eye" size={24} color={COLORS.black} />
-                  )}
+              <Button
+                title="Login"
+                filled
+                onPress={handleLogin}
+                style={styles.loginButton}
+              />
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>Or login with</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <View style={styles.socialButtons}>
+                <TouchableOpacity style={styles.socialButton}>
+                  <Image
+                    source={require("../img/google.png")}
+                    style={styles.socialIcon}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.socialButton}>
+                  <Image
+                    source={require("../img/facebook.png")}
+                    style={styles.socialIcon}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>Don't have an account? </Text>
+                <TouchableOpacity>
+                  <Text style={styles.signupText}>Sign Up</Text>
                 </TouchableOpacity>
               </View>
             </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                marginVertical: 6,
-              }}>
-              <Checkbox
-                style={{ marginRight: 8 }}
-                value={isChecked}
-                onValueChange={setIsChecked}
-                color={isChecked ? COLORS.primary : undefined}
-              />
-
-              <Text>Ghi nhớ đăng nhập</Text>
-            </View>
-
-            <Button
-              title="Đăng nhập"
-              filled
-              style={{
-                marginTop: 18,
-                marginBottom: 4,
-              }}
-              onPress={() => {
-                navigation.navigate("MyTabs");
-              }}
-            />
-
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginVertical: 20,
-              }}>
-              <View
-                style={{
-                  flex: 1,
-                  height: 1,
-                  backgroundColor: COLORS.primary,
-                  marginHorizontal: 10,
-                }}
-              />
-              <Text style={{ fontSize: 14 }}>hoặc đăng nhập bằng</Text>
-              <View
-                style={{
-                  flex: 1,
-                  height: 1,
-                  backgroundColor: COLORS.primary,
-                  marginHorizontal: 10,
-                }}
-              />
-            </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "center",
-              }}>
-              <TouchableOpacity
-                onPress={() => console.log("Pressed")}
-                style={{
-                  flex: 1,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexDirection: "row",
-                  height: 52,
-                  borderWidth: 2,
-                  borderColor: COLORS.primary,
-                  marginRight: 4,
-                  borderRadius: 10,
-                }}>
-                <Image
-                  source={require("../img/facebook.png")}
-                  style={{
-                    height: 36,
-                    width: 36,
-                    marginRight: 8,
-                  }}
-                  resizeMode="contain"
-                />
-
-                <Text>Facebook</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => console.log("Pressed")}
-                style={{
-                  flex: 1,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexDirection: "row",
-                  height: 52,
-                  borderWidth: 2,
-                  borderColor: COLORS.primary,
-                  marginRight: 4,
-                  borderRadius: 10,
-                }}>
-                <Image
-                  source={require("../img/google.png")}
-                  style={{
-                    height: 36,
-                    width: 36,
-                    marginRight: 8,
-                  }}
-                  resizeMode="contain"
-                />
-
-                <Text>Google</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "center",
-                marginVertical: 22,
-              }}>
-              <Text style={{ fontSize: 16, color: COLORS.black }}>
-                Bạn chưa có tài khoản?{" "}
-              </Text>
-              <Pressable onPress={() => navigation.navigate("Signup")}>
-                <Text
-                  style={{
-                    fontSize: 17,
-                    color: COLORS.primary,
-                    fontWeight: "bold",
-                    marginLeft: 6,
-                  }}>
-                  Đăng ký
-                </Text>
-              </Pressable>
-            </View>
           </View>
-        </TouchableWithoutFeedback>
-      </SafeAreaView>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
     </ImageBackground>
   );
 };
+
+const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: "100%",
+  },
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+    justifyContent: "center",
+  },
+  header: {
+    marginBottom: 32,
+  },
+  welcomeText: {
+    fontSize: 16,
+    color: COLORS.grey[500],
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: COLORS.text.primary,
+  },
+  form: {
+    gap: 20,
+  },
+  inputContainer: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: COLORS.text.secondary,
+  },
+  inputWrapper: {
+    width: "100%",
+    height: 48,
+    borderColor: COLORS.grey[200],
+    borderWidth: 1,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.white,
+    flexDirection: "row",
+  },
+  input: {
+    flex: 1,
+    height: "100%",
+    color: COLORS.text.primary,
+  },
+  eyeIcon: {
+    padding: 4,
+  },
+  forgotPassword: {
+    alignSelf: "flex-end",
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: "500",
+  },
+  loginButton: {
+    marginTop: 12,
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 28,
+    gap: 8,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.grey[200],
+  },
+  dividerText: {
+    color: COLORS.text.secondary,
+    fontSize: 14,
+  },
+  socialButtons: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 20,
+  },
+  socialButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.white,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  socialIcon: {
+    width: 24,
+    height: 24,
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 32,
+  },
+  footerText: {
+    color: COLORS.text.secondary,
+    fontSize: 14,
+  },
+  signupText: {
+    color: COLORS.primary,
+    fontWeight: "500",
+    fontSize: 14,
+  },
+});
 
 export default Login;

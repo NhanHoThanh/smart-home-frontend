@@ -3,132 +3,178 @@ import {
   StyleSheet,
   Text,
   View,
-  Switch,
-  Image,
-  TouchableOpacity,
-  ImageBackground,
   FlatList,
+  ImageBackground,
+  Animated,
 } from "react-native";
-import SimpleDateTime from "react-simple-timestamp-to-date";
 import COLORS from "../../colors";
-import React from "react";
-import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
-import {
-  db,
-  db1,
-  ref,
-  onValue,
-  set,
-  child,
-  push,
-  update,
-  firebase,
-} from "../../firebase";
-import { collection, onSnapshot, orderBy } from "firebase/firestore";
+import React, { useEffect, useState, useRef } from "react";
 
 const Notification = () => {
-  const [people, setPeople] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [activities, setActivities] = useState([]);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    setLoading(true);
-    const usersQuery = collection(db1, "act");
-    onSnapshot(usersQuery, (snapshot) => {
-      let usersList = [];
-      snapshot.docs.map((doc) => usersList.push({ ...doc.data(), id: doc.id }));
+    // Fade in animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
 
-      usersList.sort((a, b) => {
-        // Sử dụng timeStamp của Firebase, nên bạn cần chuyển đổi nó sang milliseconds
-        const timeA = a.time.toMillis();
-        const timeB = b.time.toMillis();
-        return timeB - timeA; // Sắp xếp giảm dần (newest first)
-      });
-      setPeople(usersList);
-      setLoading(false);
-    });
+    // Generate temporary data
+    const tempData = [
+      {
+        id: '1',
+        actor: 'System',
+        act: 'turned on the AC',
+        time: new Date(Date.now() - 1000 * 60 * 5)
+      },
+      {
+        id: '2',
+        actor: 'User',
+        act: 'adjusted fan speed to level 2',
+        time: new Date(Date.now() - 1000 * 60 * 10)
+      },
+      {
+        id: '3',
+        actor: 'System',
+        act: 'detected high temperature (31°C)',
+        time: new Date(Date.now() - 1000 * 60 * 15)
+      },
+      {
+        id: '4',
+        actor: 'User',
+        act: 'turned off all lights',
+        time: new Date(Date.now() - 1000 * 60 * 30)
+      },
+      {
+        id: '5',
+        actor: 'System',
+        act: 'started night mode',
+        time: new Date(Date.now() - 1000 * 60 * 45)
+      }
+    ];
+
+    setActivities(tempData);
+
+    // Simulate new activities
+    const interval = setInterval(() => {
+      const newActivity = {
+        id: Date.now().toString(),
+        actor: Math.random() > 0.5 ? 'System' : 'User',
+        act: Math.random() > 0.5 ? 'adjusted temperature' : 'changed light settings',
+        time: new Date()
+      };
+      setActivities(prev => [newActivity, ...prev.slice(0, 9)]);
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
-  const renderItem = ({ item }) => {
-    let actorName = "";
-    if (item.actor === "None") {
-      actorName = "thủ công";
-    } else {
-      actorName = item.actor;
-    }
-    return (
-      <View style={styles.item}>
-        <Text style={styles.text}>
-          {actorName} {item.act}
+  const renderItem = ({ item }) => (
+    <Animated.View style={[styles.item, { opacity: fadeAnim }]}>
+      <View style={styles.activityHeader}>
+        <Text style={styles.actorText}>{item.actor}</Text>
+        <Text style={styles.timeText}>
+          {item.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </Text>
-        <View style={{ flexDirection: "row" }}>
-          <Text>vào </Text>
-          <Text>{item.time.toDate().toLocaleTimeString()}</Text>
-          <Text> ngày </Text>
-          <Text>{item.time.toDate().toLocaleDateString()}</Text>
-        </View>
       </View>
-    );
-  };
-
-  const Separator = () => {
-    return (
-      <View
-        style={{
-          alignItems: "center",
-        }}>
-        <View
-          style={{
-            height: 0.5,
-            width: "90%",
-            backgroundColor: COLORS.secondary,
-          }}></View>
-      </View>
-    );
-  };
+      <Text style={styles.actionText}>{item.act}</Text>
+      <Text style={styles.dateText}>
+        {item.time.toLocaleDateString([], {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        })}
+      </Text>
+    </Animated.View>
+  );
 
   return (
     <ImageBackground
       source={require("../img/background.png")}
       resizeMode="cover"
-      style={{
-        height: "100%",
-        width: "100%",
-      }}>
+      style={styles.background}>
       <SafeAreaView style={styles.container}>
-        <View style={{ alignItems: "center" }}>
-          <Text style={{ fontSize: 20, fontWeight: "bold" }}>
-            Lịch sử hoạt động
-          </Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Activity Log</Text>
         </View>
 
         <FlatList
-          data={people}
+          data={activities}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          ItemSeparatorComponent={Separator}
+          keyExtractor={item => item.id}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          contentContainerStyle={styles.listContent}
         />
       </SafeAreaView>
     </ImageBackground>
   );
 };
 
-export default Notification;
-
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    //backgroundColor: "#fff",
-    //alignItems: "center",
-    //justifyContent: "center",
-    marginTop: 50,
+    paddingTop: 20,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.grey[200],
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+    textAlign: 'center',
+  },
+  listContent: {
+    padding: 20,
   },
   item: {
-    flexDirection: "column",
-    height: 60,
-    padding: 10,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  text: {
-    fontSize: 18,
+  activityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  actorText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  timeText: {
+    fontSize: 14,
+    color: COLORS.text.secondary,
+  },
+  actionText: {
+    fontSize: 15,
+    color: COLORS.text.primary,
+    marginBottom: 4,
+  },
+  dateText: {
+    fontSize: 12,
+    color: COLORS.text.tertiary,
+  },
+  separator: {
+    height: 12,
   },
 });
+
+export default Notification;
