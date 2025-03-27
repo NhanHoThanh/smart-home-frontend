@@ -1,31 +1,29 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   Image,
-  TextInput,
-  TouchableOpacity,
   ImageBackground,
   Keyboard,
-  TouchableWithoutFeedback,
+  Pressable,
   StyleSheet,
   Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Surface, Text, TextInput, Button, IconButton, TouchableRipple } from 'react-native-paper';
 import COLORS from "../../colors";
-import { Ionicons } from "@expo/vector-icons";
-import Button from "../../Button";
+import { useNavigation } from '@react-navigation/native';  // Add this
 
 const { width } = Dimensions.get("window");
 
-const Login = ({ navigation }) => {
+const Login = () => {
+  const navigation = useNavigation();  // Add this hook
   const [isPasswordShown, setIsPasswordShown] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = () => {
     // Temporary login logic without backend
-    if (email.length > 0 && password.length > 0) {
+    if (true) {
       navigation.navigate("MyTabs");
     }
   };
@@ -35,62 +33,55 @@ const Login = ({ navigation }) => {
       source={require("../img/background.png")}
       resizeMode="cover"
       style={styles.backgroundImage}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <Pressable onPress={Keyboard.dismiss}>
         <SafeAreaView style={styles.container}>
           <View style={styles.content}>
-            <View style={styles.header}>
-              <Text style={styles.welcomeText}>Welcome Back! 👋</Text>
-              <Text style={styles.title}>LOGIN</Text>
-            </View>
+            <Surface style={styles.header} elevation={1}>
+              <Text variant="titleLarge" style={styles.welcomeText}>Welcome Back! 👋</Text>
+              <Text variant="headlineLarge" style={styles.title}>LOGIN</Text>
+            </Surface>
 
             <View style={styles.form}>
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email Address</Text>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    placeholder="Enter your email"
-                    placeholderTextColor={COLORS.grey[400]}
-                    keyboardType="email-address"
-                    style={styles.input}
-                    value={email}
-                    onChangeText={setEmail}
-                  />
-                </View>
+                <TextInput
+                  label="Email Address"
+                  mode="outlined"
+                  placeholder="Enter your email"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                  style={styles.input}
+                />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    placeholder="Enter your password"
-                    placeholderTextColor={COLORS.grey[400]}
-                    secureTextEntry={!isPasswordShown}
-                    style={styles.input}
-                    value={password}
-                    onChangeText={setPassword}
-                  />
-                  <TouchableOpacity
+                <TextInput
+                  label="Password"
+                  mode="outlined"
+                  placeholder="Enter your password"
+                  secureTextEntry={!isPasswordShown}
+                  value={password}
+                  onChangeText={setPassword}
+                  style={styles.input}
+                  right={<TextInput.Icon
+                    icon={isPasswordShown ? "eye-off" : "eye"}
                     onPress={() => setIsPasswordShown(!isPasswordShown)}
-                    style={styles.eyeIcon}>
-                    <Ionicons
-                      name={isPasswordShown ? "eye-off" : "eye"}
-                      size={24}
-                      color={COLORS.grey[400]}
-                    />
-                  </TouchableOpacity>
-                </View>
+                  />}
+                />
               </View>
 
-              <TouchableOpacity style={styles.forgotPassword}>
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </TouchableOpacity>
+              <TouchableRipple
+                onPress={() => {}}
+                style={styles.forgotPassword}>
+                <Text variant="bodyLarge" style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableRipple>
 
               <Button
-                title="Login"
-                filled
+                mode="contained"
                 onPress={handleLogin}
-                style={styles.loginButton}
-              />
+                style={styles.loginButton}>
+                Login
+              </Button>
 
               <View style={styles.divider}>
                 <View style={styles.dividerLine} />
@@ -99,30 +90,30 @@ const Login = ({ navigation }) => {
               </View>
 
               <View style={styles.socialButtons}>
-                <TouchableOpacity style={styles.socialButton}>
+                <TouchableRipple style={styles.socialButton} onPress={() => {}}>
                   <Image
                     source={require("../img/google.png")}
                     style={styles.socialIcon}
                   />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton}>
+                </TouchableRipple>
+                <TouchableRipple style={styles.socialButton} onPress={() => {}}>
                   <Image
                     source={require("../img/facebook.png")}
                     style={styles.socialIcon}
                   />
-                </TouchableOpacity>
+                </TouchableRipple>
               </View>
 
               <View style={styles.footer}>
-                <Text style={styles.footerText}>Don't have an account? </Text>
-                <TouchableOpacity>
-                  <Text style={styles.signupText}>Sign Up</Text>
-                </TouchableOpacity>
+                <Text variant="bodyLarge" style={styles.footerText}>Don't have an account? </Text>
+                <TouchableRipple onPress={() => {}}>
+                  <Text variant="bodyLarge" style={styles.signupText}>Sign Up</Text>
+                </TouchableRipple>
               </View>
             </View>
           </View>
         </SafeAreaView>
-      </TouchableWithoutFeedback>
+      </Pressable>
     </ImageBackground>
   );
 };
@@ -142,16 +133,16 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 32,
+    padding: 16,
+    borderRadius: 12,
   },
   welcomeText: {
     fontSize: 16,
-    color: COLORS.grey[500],
     marginBottom: 8,
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: COLORS.text.primary,
   },
   form: {
     gap: 20,
@@ -162,24 +153,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: "500",
-    color: COLORS.text.secondary,
   },
   inputWrapper: {
     width: "100%",
     height: 48,
-    borderColor: COLORS.grey[200],
     borderWidth: 1,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
-    backgroundColor: COLORS.white,
     flexDirection: "row",
   },
   input: {
     flex: 1,
     height: "100%",
-    color: COLORS.text.primary,
   },
   eyeIcon: {
     padding: 4,
@@ -189,7 +176,6 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: COLORS.primary,
     fontWeight: "500",
   },
   loginButton: {
@@ -199,16 +185,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginVertical: 28,
-    gap: 8,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: COLORS.grey[200],
   },
   dividerText: {
-    color: COLORS.text.secondary,
-    fontSize: 14,
+    marginHorizontal: 12,
   },
   socialButtons: {
     flexDirection: "row",
@@ -219,10 +202,8 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: COLORS.white,
-    justifyContent: "center",
     alignItems: "center",
-    shadowColor: COLORS.black,
+    justifyContent: "center",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -235,16 +216,13 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 32,
+    marginTop: 28,
   },
   footerText: {
-    color: COLORS.text.secondary,
     fontSize: 14,
   },
   signupText: {
-    color: COLORS.primary,
     fontWeight: "500",
-    fontSize: 14,
   },
 });
 

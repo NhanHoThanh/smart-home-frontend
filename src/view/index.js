@@ -19,6 +19,10 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+import Monitoring from './monitoring';
+import Control from './control';
+import AirCondition from "./devices/airCondition";
+
 function MyTabs() {
   return (
     <Tab.Navigator
@@ -63,6 +67,30 @@ function MyTabs() {
           ),
         }}
       />
+      <Tab.Screen
+        name="Monitoring"
+        component={Monitoring}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Image
+              source={require("../img/icon/temparature.png")}
+              style={{ height: 24, width: 24, tintColor: color }}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Control"
+        component={Control}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Image
+              source={require("../img/icon/air_conditioner.png")}
+              style={{ height: 24, width: 24, tintColor: color }}
+            />
+          ),
+        }}
+      />
     </Tab.Navigator>
   );
 }
@@ -76,6 +104,11 @@ export default RootComponent = function () {
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Signup" component={Signup} />
         <Stack.Screen name="MyTabs" component={MyTabs} />
+        <Stack.Screen name="Home" component={Home} />
+        <Stack.Screen name="Notification" component={Notification} />
+        <Stack.Screen name="Monitoring" component={Monitoring} />
+        <Stack.Screen name="Control" component={Control} />
+        <Stack.Screen name = "AirCondition" component = {AirCondition} />
       </Stack.Navigator>
     </NavigationContainer>
   );

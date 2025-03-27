@@ -3,13 +3,14 @@ import React, { useEffect, useRef } from "react";
 import COLORS from "./colors";
 
 const Button = (props) => {
+  const colors = COLORS;
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  const filledBgColor = props.color || COLORS.primary;
-  const outlinedColor = COLORS.white;
+  const filledBgColor = props.color || colors.primary;
+  const outlinedColor = colors.white;
   const bgColor = props.filled ? filledBgColor : outlinedColor;
-  const textColor = props.filled ? COLORS.white : COLORS.primary;
+  const textColor = props.filled ? colors.white : colors.primary;
 
   useEffect(() => {
     if (props.disabled) {
@@ -71,16 +72,11 @@ const styles = StyleSheet.create({
   button: {
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderColor: COLORS.primary,
     borderWidth: 2,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    elevation: 3,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    boxShadow: "0px 2px 3.84px rgba(0, 0, 0, 0.25)",
   },
   text: {
     fontSize: 16,

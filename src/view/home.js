@@ -1,78 +1,126 @@
 import {
   SafeAreaView,
   StyleSheet,
-  Text,
   View,
-  Switch,
   Image,
-  TouchableOpacity,
   ImageBackground,
   Animated,
+  ScrollView,
+  Dimensions,
+  TouchableOpacity,
 } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigation } from '@react-navigation/native';
+import {  Text, IconButton, Card, Avatar } from 'react-native-paper';
 import COLORS from "../../colors";
-import React, { useEffect, useState, useRef } from "react";
-import { Ionicons } from "@expo/vector-icons";
 
-const Home = ({ navigation }) => {
-  // Temporary values without backend
-  const [temp, setTemp] = useState(28);
-  const [humid, setHumidity] = useState(65);
-  const [lux, setLux] = useState(800);
-  const [isEnabled1, setIsEnabled1] = useState(false);
-  const [isEnabled2, setIsEnabled2] = useState(false);
-  const [isEnabled3, setIsEnabled3] = useState(false);
-  const [fan_level, setLevel] = useState(0);
 
-  // Animation values
+
+const Home = () => {
+  const colors = COLORS;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  const [rooms, setRooms] = useState({
+    'Master Bedroom': { 
+      devices: [
+        { type: 'ac', name: 'Air Condition', isOn: true },
+        { type: 'light', name: 'Light', isOn: true },
+        { type: 'fan', name: 'Fan', isOn: false },
+        { type: 'tv', name: 'TV', isOn: true }
+      ]
+    },
+    'Living Room': { 
+      devices: [
+        { type: 'ac', name: 'Air Condition', isOn: false },
+        { type: 'light', name: 'Light', isOn: true },
+        { type: 'fan', name: 'Fan', isOn: true },
+        { type: 'tv', name: 'TV', isOn: false },
+        { type: 'speaker', name: 'Speaker', isOn: true },
+        { type: 'curtain', name: 'Curtain', isOn: false }
+      ]
+    },
+    'Kitchen': { 
+      devices: [
+        { type: 'light', name: 'Light', isOn: true },
+        { type: 'fan', name: 'Fan', isOn: true },
+        { type: 'fridge', name: 'Refrigerator', isOn: true }
+      ]
+    },
+    'Bathroom': { 
+      devices: [
+        { type: 'light', name: 'Light', isOn: false },
+        { type: 'fan', name: 'Fan', isOn: false }
+      ]
+    }
+  });
+
+  const getDeviceIcon = (type) => {
+    return require('../img/background.png');
+    // switch(type) {
+    //   case 'ac': return require("../img/icon/air_conditioner.png");
+    //   case 'light': return require("../img/icon/light.png");
+    //   case 'fan': return require("../img/icon/fan.png");
+    //   case 'tv': return require("../img/icon/tv.png");
+    //   case 'speaker': return require("../img/icon/speaker.png");
+    //   case 'curtain': return require("../img/icon/curtain.png");
+    //   case 'fridge': return require("../img/icon/fridge.png");
+    //   default: return require("../img/icon/device.png");
+    // }
+  };
+
   useEffect(() => {
-    // Fade in animation
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1000,
       useNativeDriver: true,
     }).start();
-
-    // Simulate sensor updates
-    const interval = setInterval(() => {
-      setTemp(prev => prev + (Math.random() - 0.5));
-      setHumidity(prev => Math.max(30, Math.min(90, prev + (Math.random() - 0.5) * 2)));
-      setLux(prev => Math.max(100, Math.min(1500, prev + (Math.random() - 0.5) * 50)));
-    }, 3000);
-
-    return () => clearInterval(interval);
   }, []);
 
-  const toggleSwitch1 = () => setIsEnabled1(prev => !prev);
-  const toggleSwitch2 = () => setIsEnabled2(prev => !prev);
-  const toggleSwitch3 = () => setIsEnabled3(prev => !prev);
+  const navigation = useNavigation();
 
-  const increaseLevel = () => setLevel(prev => Math.min(3, prev + 1));
-  const decreaseLevel = () => setLevel(prev => Math.max(0, prev - 1));
+  const navigateToDevice = (deviceType) => {
+    if (deviceType === 'ac') {
+      navigation.navigate('AirCondition');
+    }
+  };
 
-  const SensorCard = ({ icon, value, unit, status }) => (
-    <View style={styles.sensorCard}>
-      <Image source={icon} style={styles.sensorIcon} />
-      <View style={styles.sensorInfo}>
-        <Text style={styles.sensorValue}>{Math.round(value)}</Text>
-        <Text style={styles.sensorUnit}>{unit}</Text>
-      </View>
-      <View style={[styles.statusDot, { backgroundColor: status ? COLORS.success : COLORS.error }]} />
-    </View>
-  );
-
-  const ControlCard = ({ icon, title, value, onToggle }) => (
-    <View style={styles.controlCard}>
-      <Image source={icon} style={styles.controlIcon} />
-      <Text style={styles.controlTitle}>{title}</Text>
-      <Switch
-        trackColor={{ false: COLORS.grey[200], true: COLORS.primary }}
-        thumbColor={COLORS.white}
-        onValueChange={onToggle}
-        value={value}
-      />
-    </View>
+  const toggleDevice = (roomName, deviceIndex) => {
+    setRooms(prev => ({
+      ...prev,
+      [roomName]: {
+        ...prev[roomName],
+        devices: prev[roomName].devices.map((device, index) => 
+          index === deviceIndex ? { ...device, isOn: !device.isOn } : device
+        )
+      }
+    }))
+  };
+  const RoomCard = ({ name, info }) => (
+    <Card style={styles.roomCard} elevation={2}>
+      <Card.Content style={styles.roomContent}>
+        <View style={styles.roomHeader}>
+          <Text variant="titleMedium" style={styles.roomName}>{name}</Text>
+          <Text variant="bodyMedium" style={styles.deviceCount}>{info.devices.length} devices</Text>
+        </View>
+        <View style={styles.devicesGrid}>
+          {info.devices.map((device, index) => (
+            <TouchableOpacity
+              key={`${name}-${device.type}-${index}`}
+              style={[styles.deviceButton, device.isOn && styles.deviceButtonActive]}
+              onPress={() => navigateToDevice(device.type)}>
+              <Image source={getDeviceIcon(device.type)} style={styles.deviceIcon} />
+              <Text style={[styles.deviceName, device.isOn && styles.deviceNameActive]}>
+                {device.name}
+              </Text>
+              <TouchableOpacity
+                style={[styles.deviceStatus, device.isOn && styles.deviceStatusActive]}
+                onPress={() => toggleDevice(name, index)}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Card.Content>
+    </Card>
   );
 
   return (
@@ -81,87 +129,59 @@ const Home = ({ navigation }) => {
       resizeMode="cover"
       style={styles.background}>
       <SafeAreaView style={styles.container}>
-        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={() => navigation.popToTop()}>
-              <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.welcomeSection}>
-            <Image
-              source={require("../img/icon/avatar.png")}
-              style={styles.avatar}
-            />
-            <Text style={styles.welcomeText}>Welcome back!</Text>
-          </View>
-
-          <View style={styles.sensorsSection}>
-            <Text style={styles.sectionTitle}>Sensors</Text>
-            <View style={styles.sensorGrid}>
-              <SensorCard
-                icon={require("../img/icon/temparature.png")}
-                value={temp}
-                unit="°C"
-                status={temp <= 30}
-              />
-              <SensorCard
-                icon={require("../img/icon/humidity.png")}
-                value={humid}
-                unit="%"
-                status={humid <= 80}
-              />
-              <SensorCard
-                icon={require("../img/icon/lux.png")}
-                value={lux}
-                unit="lux"
-                status={lux <= 1000}
-              />
-            </View>
-          </View>
-
-          <View style={styles.controlsSection}>
-            <Text style={styles.sectionTitle}>Controls</Text>
-            <View style={styles.controlGrid}>
-              <ControlCard
-                icon={require("../img/icon/light.png")}
-                title="Light"
-                value={isEnabled1}
-                onToggle={toggleSwitch1}
-              />
-              <ControlCard
-                icon={require("../img/icon/air_conditioner.png")}
-                title="AC"
-                value={isEnabled2}
-                onToggle={toggleSwitch2}
-              />
-            </View>
-
-            <View style={styles.fanControl}>
-              <Image
-                source={require("../img/icon/fan.png")}
-                style={styles.fanIcon}
-              />
-              <Text style={styles.fanTitle}>Fan Speed</Text>
-              <View style={styles.fanLevelControl}>
-                <TouchableOpacity onPress={decreaseLevel} style={styles.fanButton}>
-                  <Ionicons name="remove" size={24} color={COLORS.primary} />
-                </TouchableOpacity>
-                <Text style={styles.fanLevel}>{fan_level}</Text>
-                <TouchableOpacity onPress={increaseLevel} style={styles.fanButton}>
-                  <Ionicons name="add" size={24} color={COLORS.primary} />
-                </TouchableOpacity>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+            <View style={styles.header}>
+              <View style={styles.headerTop}>
+                <View style={styles.userInfo}>
+                  <Text variant="headlineSmall" style={styles.greeting}>Hi, John</Text>
+                  <Text variant="bodyLarge" style={styles.welcomeText}>Welcome Home</Text>
+                </View>
+                <Avatar.Image
+                  source={require("../img/icon/avatar.png")}
+                  size={48}
+                  style={styles.avatar}
+                />
               </View>
             </View>
-          </View>
-        </Animated.View>
+
+            <Card style={styles.locationCard} elevation={2}>
+              <Card.Content style={styles.locationContent}>
+                <View>
+                  <Text variant="titleMedium" style={styles.locationTitle}>My Location</Text>
+                  <Text variant="bodyMedium" style={styles.locationSubtitle}>Montreal</Text>
+                  <Text variant="displaySmall" style={styles.temperature}>-10°</Text>
+                  <Text variant="bodyMedium" style={styles.weatherDesc}>Partly Cloudy</Text>
+                </View>
+                <View style={styles.weatherIconContainer}>
+                  <IconButton
+                    icon="weather-partly-cloudy"
+                    size={48}
+                    iconColor={colors.primary}
+                  />
+                </View>
+              </Card.Content>
+            </Card>
+
+            <Text variant="titleLarge" style={styles.sectionTitle}>My Rooms</Text>
+
+            <View style={styles.roomsContainer}>
+              {Object.entries(rooms).map(([name, info]) => (
+                <RoomCard
+                  key={name}
+                  name={name}
+                  info={info}
+                />
+              ))}
+            </View>
+          </Animated.View>
+        </ScrollView>
       </SafeAreaView>
     </ImageBackground>
   );
 };
+
+const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   background: {
@@ -171,156 +191,148 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    flex: 1,
     padding: 20,
+    paddingBottom: 40,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  logoutText: {
-    fontSize: 16,
-    color: COLORS.primary,
+  userInfo: {
+    flex: 1,
   },
-  welcomeSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    marginRight: 15,
+  greeting: {
+    color: '#000000',
+    marginBottom: 4,
   },
   welcomeText: {
-    fontSize: 24,
-    fontWeight: "600",
-    color: COLORS.text.primary,
+    color: '#666666',
+  },
+  avatar: {
+    backgroundColor: '#F5F5F5',
+  },
+  locationCard: {
+    marginBottom: 24,
+    borderRadius: 16,
+    backgroundColor: '#6200EE',
+  },
+  locationContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+  },
+  locationTitle: {
+    color: '#FFFFFF',
+    opacity: 0.8,
+    marginBottom: 4,
+  },
+  locationSubtitle: {
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  temperature: {
+    color: '#FFFFFF',
+    fontSize: 48,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  weatherDesc: {
+    color: '#FFFFFF',
+    opacity: 0.8,
+  },
+  weatherIconContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "600",
-    color: COLORS.text.primary,
-    marginBottom: 15,
+    fontWeight: '600',
+    marginBottom: 16,
+    color: '#000000',
   },
-  sensorsSection: {
-    marginBottom: 30,
+  roomsContainer: {
+    gap: 16,
   },
-  sensorGrid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  sensorCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 15,
-    width: "30%",
-    alignItems: "center",
-    shadowColor: COLORS.black,
+  roomCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    elevation: 2,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
   },
-  sensorIcon: {
-    width: 40,
-    height: 40,
-    marginBottom: 10,
+  roomContent: {
+    padding: 16,
   },
-  sensorInfo: {
-    alignItems: "center",
+  roomHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
-  sensorValue: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: COLORS.text.primary,
+  roomName: {
+    color: '#000000',
+    fontWeight: '600',
+    fontSize: 18,
   },
-  sensorUnit: {
+  deviceCount: {
+    color: '#666666',
     fontSize: 14,
-    color: COLORS.text.secondary,
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    position: "absolute",
-    top: 10,
-    right: 10,
+  devicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    paddingTop: 8,
   },
-  controlsSection: {
-    flex: 1,
+  deviceButton: {
+    width: (width - 80) / 3,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
-  controlGrid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
+  deviceButtonActive: {
+    backgroundColor: '#EDE7F6',
   },
-  controlCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 15,
-    width: "47%",
-    alignItems: "center",
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  deviceIcon: {
+    width: 28,
+    height: 28,
+    marginBottom: 8,
+    tintColor: '#666666',
   },
-  controlIcon: {
-    width: 40,
-    height: 40,
-    marginBottom: 10,
+  deviceName: {
+    fontSize: 13,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 6,
+    fontWeight: '500',
   },
-  controlTitle: {
-    fontSize: 16,
-    color: COLORS.text.secondary,
-    marginBottom: 10,
+  deviceNameActive: {
+    color: '#6200EE',
   },
-  fanControl: {
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 20,
-    alignItems: "center",
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  deviceStatus: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#666666',
   },
-  fanIcon: {
-    width: 40,
-    height: 40,
-    marginBottom: 10,
-  },
-  fanTitle: {
-    fontSize: 16,
-    color: COLORS.text.secondary,
-    marginBottom: 15,
-  },
-  fanLevelControl: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-  },
-  fanButton: {
-    backgroundColor: COLORS.background.secondary,
-    borderRadius: 10,
-    padding: 8,
-    marginHorizontal: 20,
-  },
-  fanLevel: {
-    fontSize: 24,
-    fontWeight: "600",
-    color: COLORS.text.primary,
-    width: 40,
-    textAlign: "center",
+  deviceStatusActive: {
+    backgroundColor: '#6200EE',
   },
 });
 

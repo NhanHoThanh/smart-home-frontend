@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import COLORS from "../../colors";
 import { Ionicons } from "@expo/vector-icons";
 import Checkbox from "expo-checkbox";
-import Button from "../../Button";
+
 
 const Signup = ({ navigation }) => {
   const [isPasswordShown, setIsPasswordShown] = useState(false);

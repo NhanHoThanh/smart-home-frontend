@@ -1,16 +1,17 @@
 import {
   SafeAreaView,
   StyleSheet,
-  Text,
   View,
   FlatList,
   ImageBackground,
   Animated,
 } from "react-native";
-import COLORS from "../../colors";
 import React, { useEffect, useState, useRef } from "react";
+import { Surface, Text, Card } from 'react-native-paper';
+
 
 const Notification = () => {
+
   const [activities, setActivities] = useState([]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -73,21 +74,25 @@ const Notification = () => {
   }, []);
 
   const renderItem = ({ item }) => (
-    <Animated.View style={[styles.item, { opacity: fadeAnim }]}>
-      <View style={styles.activityHeader}>
-        <Text style={styles.actorText}>{item.actor}</Text>
-        <Text style={styles.timeText}>
-          {item.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
-      </View>
-      <Text style={styles.actionText}>{item.act}</Text>
-      <Text style={styles.dateText}>
-        {item.time.toLocaleDateString([], {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        })}
-      </Text>
+    <Animated.View style={{ opacity: fadeAnim }}>
+      <Card style={styles.item}>
+        <Card.Content>
+          <View style={styles.activityHeader}>
+            <Text variant="titleMedium" style={{ color: '#6200EE' }}>{item.actor}</Text>
+            <Text variant="bodySmall" style={{ color: '#757575' }}>
+              {item.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          </View>
+          <Text variant="bodyLarge" style={{ marginVertical: 4 }}>{item.act}</Text>
+          <Text variant="bodySmall" style={{ color: '#9E9E9E' }}>
+            {item.time.toLocaleDateString([], {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            })}
+          </Text>
+        </Card.Content>
+      </Card>
     </Animated.View>
   );
 
@@ -97,9 +102,9 @@ const Notification = () => {
       resizeMode="cover"
       style={styles.background}>
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Activity Log</Text>
-        </View>
+        <Surface style={[styles.header, { borderBottomColor: '#E5E5E5' }]} elevation={1}>
+          <Text variant="headlineLarge" style={styles.title}>Activity Log</Text>
+        </Surface>
 
         <FlatList
           data={activities}
@@ -125,24 +130,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.grey[200],
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   title: {
     fontSize: 24,
     fontWeight: '600',
-    color: COLORS.text.primary,
     textAlign: 'center',
   },
   listContent: {
     padding: 20,
   },
   item: {
-    backgroundColor: COLORS.white,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: COLORS.black,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -157,20 +158,16 @@ const styles = StyleSheet.create({
   actorText: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.primary,
   },
   timeText: {
     fontSize: 14,
-    color: COLORS.text.secondary,
   },
   actionText: {
     fontSize: 15,
-    color: COLORS.text.primary,
     marginBottom: 4,
   },
   dateText: {
     fontSize: 12,
-    color: COLORS.text.tertiary,
   },
   separator: {
     height: 12,
