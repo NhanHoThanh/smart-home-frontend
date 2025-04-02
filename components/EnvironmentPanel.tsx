@@ -30,23 +30,19 @@ export default function EnvironmentPanel() {
             </View>
             <View>
               <Text style={styles.value}>{environmentData.temperature}°C</Text>
-              <Text style={styles.label}>Temperature</Text>
+              <Text style={styles.label}>Normal</Text>
             </View>
           </View>
-
-          <View style={styles.separator} />
-
+          
           <View style={styles.environmentItem}>
             <View style={[styles.iconContainer, { backgroundColor: `${colors.secondary}20` }]}>
               <Droplets size={20} color={colors.secondary} />
             </View>
             <View>
               <Text style={styles.value}>{environmentData.humidity}%</Text>
-              <Text style={styles.label}>Humidity</Text>
+              <Text style={styles.label}>Good</Text>
             </View>
           </View>
-
-          <View style={styles.separator} />
 
           <View style={styles.environmentItem}>
             <View style={[styles.iconContainer, { backgroundColor: '#FFC10720' }]}>
@@ -54,7 +50,7 @@ export default function EnvironmentPanel() {
             </View>
             <View>
               <Text style={styles.value}>{environmentData.lightLevel}%</Text>
-              <Text style={styles.label}>Light Level</Text>
+              <Text style={styles.label}>Bright</Text>
             </View>
           </View>
         </View>
@@ -103,7 +99,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   value: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.text,
   },
