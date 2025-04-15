@@ -1,8 +1,5 @@
 # Smart Home App API Documentation
 
-## Overview
-
-This document outlines the API endpoints needed for the Smart Home mobile application. The API follows RESTful principles and uses JSON for data exchange.
 
 ## Base URL
 
@@ -108,7 +105,7 @@ GET /devices
     "id": "1",
     "name": "Main Light",
     "type": "light",
-    "roomId": "1",
+    "room_id": "1",
     "status": true,
     "icon": "lamp-ceiling",
     "brightness": 80
@@ -117,7 +114,7 @@ GET /devices
     "id": "2",
     "name": "AC",
     "type": "climate",
-    "roomId": "1",
+    "room_id": "1",
     "status": true,
     "icon": "air-vent",
     "temperature": 23
@@ -138,7 +135,7 @@ GET /devices/:id
   "id": "1",
   "name": "Main Light",
   "type": "light",
-  "roomId": "1",
+  "room_id": "1",
   "status": true,
   "icon": "lamp-ceiling",
   "brightness": 80
@@ -157,7 +154,7 @@ POST /devices
 {
   "name": "New Light",
   "type": "light",
-  "roomId": "1",
+  "roomm_id": "1",
   "icon": "lamp-ceiling"
 }
 ```
@@ -174,7 +171,8 @@ PUT /devices/:id
 {
   "name": "Updated Light",
   "status": false,
-  "brightness": 50
+  "brightness": 50,
+  "temperature": 24
 }
 ```
 
@@ -193,33 +191,6 @@ PATCH /devices/:id/toggle
 }
 ```
 
-#### Update Device Brightness
-
-```
-PATCH /devices/:id/brightness
-```
-
-**Request Body:**
-
-```json
-{
-  "brightness": 75
-}
-```
-
-#### Update Device Temperature
-
-```
-PATCH /devices/:id/temperature
-```
-
-**Request Body:**
-
-```json
-{
-  "temperature": 24
-}
-```
 
 #### Delete Device
 
@@ -242,25 +213,25 @@ GET /cameras
 
 ```json
 [
-  {
+    {
     "id": "1",
     "name": "Front Door Camera",
     "roomId": "6",
-    "isOnline": true,
-    "hasMotion": true,
-    "imageUrl": "https://example.com/camera1.jpg",
-    "lastMotionTime": "2 min ago",
-    "hasRecording": true,
-    "detectedEntities": [
-      {
+    "is_online": true,
+    "has_motion": true,
+    "image_url": "https://example.com/camera1.jpg",
+    "last_motion_time": "2 min ago",
+    "has_recording": true,
+    "detected_entities": [
+        {
         "type": "person",
         "confidence": 0.98,
-        "personType": "owner",
-        "personName": "John",
-        "timestamp": "2 min ago"
-      }
+        "person_type": "owner",
+        "person_name": "John",
+        "timestamp": "12:00:00" 
+        }
     ]
-  }
+    }
 ]
 ```
 
@@ -277,18 +248,18 @@ GET /cameras/:id
   "id": "1",
   "name": "Front Door Camera",
   "roomId": "6",
-  "isOnline": true,
-  "hasMotion": true,
-  "imageUrl": "https://example.com/camera1.jpg",
-  "lastMotionTime": "2 min ago",
-  "hasRecording": true,
-  "detectedEntities": [
+  "is_online": true,
+  "has_motion": true,
+  "image_url": "https://example.com/camera1.jpg",
+  "last_motion_time": "2 min ago",
+  "has_recording": true,
+  "detected_entities": [
     {
       "type": "person",
       "confidence": 0.98,
-      "personType": "owner",
-      "personName": "John",
-      "timestamp": "2 min ago"
+      "person_type": "owner",
+      "person_name": "John",
+      "timestamp": "12:00:00" 
     }
   ]
 }
@@ -305,7 +276,7 @@ POST /cameras
 ```json
 {
   "name": "New Camera",
-  "roomId": "1"
+  "room_id": "1"
 }
 ```
 
@@ -320,7 +291,7 @@ PUT /cameras/:id
 ```json
 {
   "name": "Updated Camera",
-  "isOnline": true
+  "is_online": true
 }
 ```
 
@@ -335,8 +306,8 @@ PATCH /cameras/:id/motion
 ```json
 {
   "id": "1",
-  "hasMotion": true,
-  "lastMotionTime": "Just now"
+  "has_motion": true,
+  "last_motion_time": "Just now"
 }
 ```
 
@@ -351,7 +322,7 @@ PATCH /cameras/:id/online
 ```json
 {
   "id": "1",
-  "isOnline": true
+  "is_online": true
 }
 ```
 
@@ -367,8 +338,8 @@ POST /cameras/:id/entities
 {
   "type": "person",
   "confidence": 0.95,
-  "personType": "family",
-  "personName": "Emma",
+  "person_type": "family",
+  "person_name": "Emma",
   "timestamp": "Just now"
 }
 ```
@@ -398,7 +369,7 @@ GET /environment
 }
 ```
 
-#### Update Environment Data
+#### Update Environment Data (For test)
 
 ```
 PUT /environment
@@ -415,24 +386,9 @@ PUT /environment
 
 ### AI Assistant
 
-#### Start Listening
-
+#### Send text
 ```
-POST /assistant/listen
-```
-
-**Response:**
-
-```json
-{
-  "isListening": true
-}
-```
-
-#### Stop Listening
-
-```
-POST /assistant/stop
+POST /assistant/text
 ```
 
 **Request Body:**
@@ -447,9 +403,27 @@ POST /assistant/stop
 
 ```json
 {
-  "isListening": false,
-  "lastCommand": "Turn on the living room lights",
-  "lastResponse": "I've turned on the living room lights."
+    "response": "oke"
+}
+```
+
+#### Send voice
+```
+POST /assistant/voice
+```
+
+**Request Body:**
+
+```json
+voice file?
+```
+
+**Response:**
+
+```json
+{
+    "user_command": "alo",
+    "response": "lo cc"
 }
 ```
 
@@ -482,7 +456,7 @@ GET /assistant/history
 DELETE /assistant/history
 ```
 
-## WebSocket Endpoints
+## WebSocket Endpoints (Cuối kì)
 
 ### Real-time Device Updates
 
