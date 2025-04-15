@@ -1,17 +1,15 @@
-# API Integration Plan for Smart Home App
+# API Integration Changes Summary
 
-## Overview
+This document outlines the changes needed for each file to implement the API integration plan.
 
-This document outlines the plan to integrate the backend API into the frontend React Native application. We'll focus on the common API endpoints (rooms, devices, environment) and leave camera, AI assistant, and WebSocket integration for later.
+## 1. New Files to Create
 
-## 1. API Service Layer
+### services/api.ts (New File)
 
-### Create API Client
+**Before**: This file didn't exist.
 
-First, create a service layer to handle API requests:
-
+**After**: 
 ```typescript
-// services/api.ts
 import axios from 'axios';
 
 const API_URL = 'https://api.smarthome.com/v1';
@@ -51,12 +49,12 @@ api.interceptors.response.use(
 export default api;
 ```
 
-### Create API Services
+### services/roomService.ts (New File)
 
-Create separate service files for each entity:
+**Before**: This file didn't exist.
 
+**After**:
 ```typescript
-// services/roomService.ts
 import api from './api';
 import { Room } from '@/types/smartHome';
 
@@ -85,8 +83,12 @@ export const deleteRoom = async (id: string): Promise<void> => {
 };
 ```
 
+### services/deviceService.ts (New File)
+
+**Before**: This file didn't exist.
+
+**After**:
 ```typescript
-// services/deviceService.ts
 import api from './api';
 import { Device } from '@/types/smartHome';
 
@@ -131,8 +133,12 @@ export const deleteDevice = async (id: string): Promise<void> => {
 };
 ```
 
+### services/environmentService.ts (New File)
+
+**Before**: This file didn't exist.
+
+**After**:
 ```typescript
-// services/environmentService.ts
 import api from './api';
 import { EnvironmentData } from '@/types/smartHome';
 
@@ -147,12 +153,15 @@ export const updateEnvironmentData = async (data: Partial<EnvironmentData>): Pro
 };
 ```
 
-## 2. Update Store with API Integration
+## 2. Existing Files to Modify
 
-Modify the Zustand store to use the API services:
+### store/smartHomeStore.ts
+
+**Before**: The store used mock data and local state management.
+
+**After**: The store will be updated to use API services and handle loading/error states:
 
 ```typescript
-// store/smartHomeStore.ts
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -297,12 +306,13 @@ export const useSmartHomeStore = create<SmartHomeState>()(
 );
 ```
 
-## 3. Update Components to Handle Loading and Error States
+### components/RoomSelector.tsx
 
-Modify components to handle loading and error states:
+**Before**: The component used local state and didn't handle loading or error states.
+
+**After**: The component will be updated to handle loading and error states:
 
 ```typescript
-// components/RoomSelector.tsx
 import React, { useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useSmartHomeStore } from '@/store/smartHomeStore';
@@ -408,12 +418,13 @@ const styles = StyleSheet.create({
 });
 ```
 
-## 4. Implement Data Fetching in App Initialization
+### app/_layout.tsx
 
-Update the app's entry point to fetch initial data:
+**Before**: The app didn't fetch initial data on startup.
+
+**After**: The app will fetch initial data on startup:
 
 ```typescript
-// app/_layout.tsx
 import { useEffect } from 'react';
 import { useSmartHomeStore } from '@/store/smartHomeStore';
 
@@ -431,29 +442,34 @@ export default function RootLayout() {
 }
 ```
 
-## 5. Testing Plan
+## 3. Dependencies to Add
 
-1. **Unit Tests**:
-   - Test API service functions
-   - Test store actions
+Add the following dependencies to your package.json:
 
-2. **Integration Tests**:
-   - Test API integration with store
-   - Test components with API data
+```json
+{
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}
+```
 
-3. **End-to-End Tests**:
-   - Test complete user flows with API integration
+## 4. Summary of Changes
 
-## 6. Implementation Timeline
+1. **New Files**:
+   - services/api.ts
+   - services/roomService.ts
+   - services/deviceService.ts
+   - services/environmentService.ts
 
-1. **Week 1**: Set up API service layer and update store
-2. **Week 2**: Update components to handle loading and error states
-3. **Week 3**: Testing and refinement
-4. **Week 4**: Bug fixes and final polish
+2. **Modified Files**:
+   - store/smartHomeStore.ts
+   - components/RoomSelector.tsx
+   - app/_layout.tsx
 
-## 7. Future Enhancements
-
-1. **WebSocket Integration**: For real-time updates
-2. **Camera API Integration**: For camera functionality
-3. **AI Assistant Integration**: For voice commands
-4. **Authentication**: For user login and authorization 
+3. **Key Changes**:
+   - Added API service layer for making HTTP requests
+   - Updated store to use API services instead of mock data
+   - Added loading and error states to components
+   - Implemented data fetching in app initialization
+   - Removed offline caching functionality 
