@@ -32,6 +32,8 @@ interface SmartHomeState {
   toggleCameraMotion: (cameraId: string) => void;
   toggleCameraOnline: (cameraId: string) => void;
   addDetectedEntity: (cameraId: string, entity: DetectedEntity) => void;
+  updateDeviceColor: (deviceId: string, color:string) => void;
+
 }
 
 export const useSmartHomeStore = create<SmartHomeState>()(
@@ -65,6 +67,19 @@ export const useSmartHomeStore = create<SmartHomeState>()(
               : device
           ),
         })),
+        updateDeviceColor: (deviceId: string, color: string) =>
+          set((state) => ({
+            devices: state.devices.map((device) =>
+              device.id === deviceId
+                ? {
+                    ...device,
+                    color,
+                  }
+                : device
+            ),
+          })),
+        
+        
       
       updateDeviceTemperature: (deviceId: string, temperature: number) => 
         set((state) => ({
