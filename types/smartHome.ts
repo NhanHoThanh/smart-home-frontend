@@ -9,7 +9,7 @@ export interface Device {
   id: string;
   name: string;
   type: 'light' | 'climate' | 'entertainment' | 'security' | 'appliance';
-  roomId: string;
+  room_id: string;
   status: boolean;
   icon: string;
   brightness?: number;

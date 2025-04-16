@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSmartHomeStore } from '@/store/smartHomeStore';
 import colors from '@/constants/colors';
-import * as Icons from 'lucide-react-native';
+import { getDeviceIcon } from '@/utils/icons';
 import { Device } from '@/types/smartHome';
 
 interface DeviceCardProps {
@@ -12,26 +12,20 @@ interface DeviceCardProps {
 export default function DeviceCard({ device }: DeviceCardProps) {
   const { toggleDevice } = useSmartHomeStore();
 
-  const getIconComponent = (iconName: string) => {
-    const IconComponent = (Icons as any)[iconName.charAt(0).toUpperCase() + iconName.slice(1)];
-    return IconComponent ? (
-      <IconComponent 
-        size={24} 
-        color={device.status ? colors.primary : colors.inactive} 
-      />
-    ) : null;
-  };
-
   return (
     <TouchableOpacity
       style={[
         styles.card,
         device.status && styles.activeCard,
       ]}
-      onPress={() => toggleDevice(device.id)}
+      onPress={() => {
+        console.log('Device ID:', device.id);
+        device.status = !device.status;
+        toggleDevice(device.id);
+      }}
     >
       <View style={styles.iconContainer}>
-        {getIconComponent(device.icon)}
+        {getDeviceIcon(device)}
       </View>
       <View style={styles.infoContainer}>
         <Text style={styles.deviceName}>{device.name}</Text>

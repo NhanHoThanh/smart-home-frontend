@@ -3,13 +3,14 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Device, Room, EnvironmentData, AIAssistantState, Camera, DetectedEntity } from '@/types/smartHome';
 import { 
-  devices as initialDevices, 
-  rooms as initialRooms, 
-  environmentData as initialEnvironmentData,
   cameras as initialCameras 
 } from '@/constants/mockData';
+import * as roomService from '@/services/roomService';
+import * as deviceService from '@/services/deviceService';
+import * as environmentService from '@/services/environmentService';
 
 interface SmartHomeState {
+  // State
   devices: Device[];
   rooms: Room[];
   cameras: Camera[];
@@ -17,13 +18,19 @@ interface SmartHomeState {
   selectedRoomId: string | null;
   aiAssistant: AIAssistantState;
   selectedCamera: Camera | null;
+  isLoading: boolean;
+  isBackgroundLoading: boolean;
+  error: string | null;
   
   // Actions
-  toggleDevice: (deviceId: string) => void;
-  updateDeviceBrightness: (deviceId: string, brightness: number) => void;
-  updateDeviceTemperature: (deviceId: string, temperature: number) => void;
+  fetchRooms: () => Promise<void>;
+  fetchDevices: (roomId?: string) => Promise<void>;
+  fetchEnvironmentData: () => Promise<void>;
+  toggleDevice: (deviceId: string) => Promise<void>;
+  updateDeviceBrightness: (deviceId: string, brightness: number) => Promise<void>;
+  updateDeviceTemperature: (deviceId: string, temperature: number) => Promise<void>;
   selectRoom: (roomId: string | null) => void;
-  updateEnvironmentData: (data: Partial<EnvironmentData>) => void;
+  updateEnvironmentData: (data: Partial<EnvironmentData>) => Promise<void>;
   startListening: () => void;
   stopListening: (command?: string) => void;
   addCommandToHistory: (command: string, response: string) => void;
@@ -36,53 +43,121 @@ interface SmartHomeState {
 
 export const useSmartHomeStore = create<SmartHomeState>()(
   persist(
-    (set) => ({
-      devices: initialDevices,
-      rooms: initialRooms,
+    (set, get) => ({
+      // Initial state
+      devices: [],
+      rooms: [],
       cameras: initialCameras,
-      environmentData: initialEnvironmentData,
+      environmentData: {
+        temperature: 0,
+        humidity: 0,
+        lightLevel: 0,
+      },
       selectedRoomId: null,
       selectedCamera: null,
       aiAssistant: {
         isListening: false,
         commandHistory: [],
       },
+      isLoading: false,
+      error: null,
+      isBackgroundLoading: false,
       
-      toggleDevice: (deviceId: string) => 
-        set((state) => ({
-          devices: state.devices.map((device) => 
-            device.id === deviceId 
-              ? { ...device, status: !device.status } 
-              : device
-          ),
-        })),
+      // API Actions
+      fetchRooms: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const rooms = await roomService.getRooms();
+          set({ rooms, isLoading: false });
+        } catch (error) {
+          set({ error: 'Failed to fetch rooms', isLoading: false });
+        }
+      },
       
-      updateDeviceBrightness: (deviceId: string, brightness: number) => 
-        set((state) => ({
-          devices: state.devices.map((device) => 
-            device.id === deviceId 
-              ? { ...device, brightness } 
-              : device
-          ),
-        })),
+      fetchDevices: async (roomId?: string) => {
+        set({ isLoading: true, error: null, isBackgroundLoading: true });
+        try {
+          const devices = await deviceService.getDevices(roomId);
+          
+          set({ devices, isLoading: false, isBackgroundLoading: false });
+        } catch (error) {
+          set({ error: 'Failed to fetch devices', isLoading: false });
+        }
+      },
       
-      updateDeviceTemperature: (deviceId: string, temperature: number) => 
-        set((state) => ({
-          devices: state.devices.map((device) => 
-            device.id === deviceId 
-              ? { ...device, temperature } 
-              : device
-          ),
-        })),
+      fetchEnvironmentData: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const environmentData = await environmentService.getEnvironmentData();
+          set({ environmentData, isLoading: false });
+        } catch (error) {
+          set({ error: 'Failed to fetch environment data', isLoading: false });
+        }
+      },
       
-      selectRoom: (roomId: string | null) => 
-        set({ selectedRoomId: roomId }),
+      toggleDevice: async (deviceId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const result = await deviceService.toggleDevice(deviceId);
+          set((state) => ({
+            devices: state.devices.map((device) => 
+              device.id === deviceId 
+                ? { ...device, status: result.status } 
+                : device
+            ),
+            isLoading: false,
+          }));
+        } catch (error) {
+          set({ error: 'Failed to toggle device', isLoading: false });
+        }
+      },
       
-      updateEnvironmentData: (data: Partial<EnvironmentData>) => 
-        set((state) => ({
-          environmentData: { ...state.environmentData, ...data },
-        })),
+      updateDeviceBrightness: async (deviceId: string, brightness: number) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updatedDevice = await deviceService.updateDeviceBrightness(deviceId, brightness);
+          set((state) => ({
+            devices: state.devices.map((device) => 
+              device.id === deviceId ? updatedDevice : device
+            ),
+            isLoading: false,
+          }));
+        } catch (error) {
+          set({ error: 'Failed to update device brightness', isLoading: false });
+        }
+      },
       
+      updateDeviceTemperature: async (deviceId: string, temperature: number) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updatedDevice = await deviceService.updateDeviceTemperature(deviceId, temperature);
+          set((state) => ({
+            devices: state.devices.map((device) => 
+              device.id === deviceId ? updatedDevice : device
+            ),
+            isLoading: false,
+          }));
+        } catch (error) {
+          set({ error: 'Failed to update device temperature', isLoading: false });
+        }
+      },
+      
+      selectRoom: (roomId: string | null) => {
+        set({ selectedRoomId: roomId });
+        get().fetchDevices(roomId || undefined);
+      },
+      
+      updateEnvironmentData: async (data: Partial<EnvironmentData>) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updatedData = await environmentService.updateEnvironmentData(data);
+          set({ environmentData: updatedData, isLoading: false });
+        } catch (error) {
+          set({ error: 'Failed to update environment data', isLoading: false });
+        }
+      },
+      
+      // Local Actions (not using API)
       startListening: () => 
         set((state) => ({
           aiAssistant: { ...state.aiAssistant, isListening: true },

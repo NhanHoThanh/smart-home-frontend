@@ -14,7 +14,7 @@ interface State {
 const IFRAME_ID = 'preview';
 
 const webTargetOrigins = [
-  "http://localhost:3000",
+  "http://localhost:8000",
 ];    
 
 function sendErrorToIframeParent(error: any, errorInfo?: any) {

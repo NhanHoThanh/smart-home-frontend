@@ -1,16 +1,27 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useSmartHomeStore } from '@/store/smartHomeStore';
 import colors from '@/constants/colors';
-import * as Icons from 'lucide-react-native';
+import { Home } from 'lucide-react-native';
+import { getRoomIcon } from '@/utils/icons';
 
-export default function RoomSelector() {
-  const { rooms, selectedRoomId, selectRoom } = useSmartHomeStore();
+export const RoomSelector = () => {
+  const { rooms, selectedRoomId, selectRoom, fetchRooms, isLoading, error } = useSmartHomeStore();
 
-  const getIconComponent = (iconName: string) => {
-    const IconComponent = (Icons as any)[iconName.charAt(0).toUpperCase() + iconName.slice(1)];
-    return IconComponent ? <IconComponent size={24} color={colors.primary} /> : null;
-  };
+  useEffect(() => {
+    fetchRooms();
+  }, [fetchRooms]);
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchRooms}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -28,7 +39,7 @@ export default function RoomSelector() {
           onPress={() => selectRoom(null)}
         >
           <View style={styles.iconContainer}>
-            <Icons.Home size={24} color={colors.primary} />
+            <Home size={24} color={colors.primary} />
           </View>
           <Text style={styles.roomName}>All</Text>
         </TouchableOpacity>
@@ -43,7 +54,7 @@ export default function RoomSelector() {
             onPress={() => selectRoom(room.id)}
           >
             <View style={styles.iconContainer}>
-              {getIconComponent(room.icon)}
+              {getRoomIcon(room)}
             </View>
             <Text style={styles.roomName}>{room.name}</Text>
           </TouchableOpacity>
@@ -51,7 +62,7 @@ export default function RoomSelector() {
       </ScrollView>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -99,4 +110,30 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '500',
   },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    color: '#ff3b30',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+  },
 });
+

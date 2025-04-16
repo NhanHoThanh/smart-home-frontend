@@ -5,20 +5,20 @@ import colors from '@/constants/colors';
 import { Thermometer, Droplets, Sun } from 'lucide-react-native';
 
 export default function EnvironmentPanel() {
-  const { environmentData, updateEnvironmentData } = useSmartHomeStore();
+  const { environmentData, fetchEnvironmentData } = useSmartHomeStore();
 
-  // Simulate changing environment data
+  // Fetch environment data periodically
   useEffect(() => {
+    // Initial fetch
+    fetchEnvironmentData();
+    
+    // Set up interval to fetch data every 10 seconds
     const interval = setInterval(() => {
-      updateEnvironmentData({
-        temperature: Math.round((environmentData.temperature + (Math.random() * 0.4 - 0.2)) * 10) / 10,
-        humidity: Math.min(100, Math.max(0, Math.round(environmentData.humidity + (Math.random() * 2 - 1)))),
-        lightLevel: Math.min(100, Math.max(0, Math.round(environmentData.lightLevel + (Math.random() * 3 - 1.5)))),
-      });
+      fetchEnvironmentData();
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [environmentData]);
+  }, [fetchEnvironmentData]);
 
   return (
     <View style={styles.container}>
