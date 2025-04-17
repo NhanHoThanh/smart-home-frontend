@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Device, Room, EnvironmentData, AIAssistantState, Camera, DetectedEntity } from '@/types/smartHome';
+import { Device, Room, EnvironmentData, AIAssistantState, Camera, DetectedEntity, HistoricalEnvironmentData } from '@/types/smartHome';
 import { 
   cameras as initialCameras 
 } from '@/constants/mockData';
@@ -15,6 +15,7 @@ interface SmartHomeState {
   rooms: Room[];
   cameras: Camera[];
   environmentData: EnvironmentData;
+  historicalEnvironmentData: HistoricalEnvironmentData | null;
   selectedRoomId: string | null;
   aiAssistant: AIAssistantState;
   selectedCamera: Camera | null;
@@ -26,6 +27,7 @@ interface SmartHomeState {
   fetchRooms: () => Promise<void>;
   fetchDevices: (roomId?: string) => Promise<void>;
   fetchEnvironmentData: () => Promise<void>;
+  fetchHistoricalEnvironmentData: () => Promise<void>;
   toggleDevice: (deviceId: string) => Promise<void>;
   updateDeviceBrightness: (deviceId: string, brightness: number) => Promise<void>;
   updateDeviceTemperature: (deviceId: string, temperature: number) => Promise<void>;
@@ -53,6 +55,7 @@ export const useSmartHomeStore = create<SmartHomeState>()(
         humidity: 0,
         lightLevel: 0,
       },
+      historicalEnvironmentData: null,
       selectedRoomId: null,
       selectedCamera: null,
       aiAssistant: {
@@ -60,8 +63,8 @@ export const useSmartHomeStore = create<SmartHomeState>()(
         commandHistory: [],
       },
       isLoading: false,
-      error: null,
       isBackgroundLoading: false,
+      error: null,
       
       // API Actions
       fetchRooms: async () => {
@@ -75,23 +78,33 @@ export const useSmartHomeStore = create<SmartHomeState>()(
       },
       
       fetchDevices: async (roomId?: string) => {
-        set({ isLoading: true, error: null, isBackgroundLoading: true });
+        set({ isBackgroundLoading: true, error: null });
         try {
           const devices = await deviceService.getDevices(roomId);
           
-          set({ devices, isLoading: false, isBackgroundLoading: false });
+          set({ devices, isBackgroundLoading: false });
         } catch (error) {
-          set({ error: 'Failed to fetch devices', isLoading: false });
+          set({ error: 'Failed to fetch devices', isBackgroundLoading: false });
         }
       },
       
       fetchEnvironmentData: async () => {
-        set({ isLoading: true, error: null });
+        set({ isBackgroundLoading: true, error: null });
         try {
           const environmentData = await environmentService.getEnvironmentData();
-          set({ environmentData, isLoading: false });
+          set({ environmentData, isBackgroundLoading: false });
         } catch (error) {
-          set({ error: 'Failed to fetch environment data', isLoading: false });
+          set({ error: 'Failed to fetch environment data', isBackgroundLoading: false });
+        }
+      },
+      
+      fetchHistoricalEnvironmentData: async () => {
+        set({ isBackgroundLoading: true, error: null });
+        try {
+          const historicalEnvironmentData = await environmentService.getHistoricalEnvironmentData();
+          set({ historicalEnvironmentData, isBackgroundLoading: false });
+        } catch (error) {
+          set({ error: 'Failed to fetch historical environment data', isBackgroundLoading: false });
         }
       },
       

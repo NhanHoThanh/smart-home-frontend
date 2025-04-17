@@ -70,7 +70,7 @@ export default function LineChart({ data, color, unit }: LineChartProps) {
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Average</Text>
           <Text style={styles.statValue}>
-            {(data.reduce((a, b) => a + b, 0) / data.length).toFixed(1)}{unit}
+            {(data.reduce((a, b) => a + b, 0) / data.length).toFixed(1)}{unit} 
           </Text>
         </View>
         

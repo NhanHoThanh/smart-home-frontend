@@ -45,6 +45,17 @@ export interface EnvironmentData {
   airQuality?: string;
 }
 
+export interface EnvironmentDataPoint {
+  created_at: string;
+  value: string;
+}
+
+export interface HistoricalEnvironmentData {
+  temperature: EnvironmentDataPoint[];
+  humidity: EnvironmentDataPoint[];
+  lightLevel: EnvironmentDataPoint[];
+}
+
 export interface AIAssistantState {
   isListening: boolean;
   lastCommand?: string;

@@ -11,6 +11,7 @@ export default function EnvironmentPanel() {
   useEffect(() => {
     // Initial fetch
     fetchEnvironmentData();
+    console.log(environmentData);
     
     // Set up interval to fetch data every 10 seconds
     const interval = setInterval(() => {

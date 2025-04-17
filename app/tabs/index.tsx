@@ -7,25 +7,25 @@ import DeviceCard from '@/components/DeviceCard';
 import QuickActions from '@/components/QuickActions';
 import EnvironmentPanel from '@/components/EnvironmentPanel';
 
+
 export default function HomeScreen() {
-  const { devices, selectedRoomId, fetchDevices, isLoading, error } = useSmartHomeStore();
+  const { devices, selectedRoomId, fetchDevices, error } = useSmartHomeStore();
 
   useEffect(() => {
-    // Initial fetch
-    fetchDevices();
+    // Background fetch
+    fetchDevices(selectedRoomId || undefined);
   }, [selectedRoomId, fetchDevices]);
 
   const filteredDevices = selectedRoomId
-    ? devices.filter(device => device.room_id=== selectedRoomId)
+    ? devices.filter(device => device.room_id === selectedRoomId)
     : devices;
 
-  // console.log('Current state:', {
-  //   allDevices: devices,
-  //   selectedRoom: selectedRoomId,
-  //   filteredDevices,
-  //   isLoading,
-  //   error
-  // });
+  console.log('Current state:', {
+    allDevices: devices,
+    selectedRoom: selectedRoomId,
+    filteredDevices,
+    error
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -45,7 +45,7 @@ export default function HomeScreen() {
             {selectedRoomId ? 'Room Devices' : 'All Devices'}
           </Text>
           
-          { error ? (
+          {error ? (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{error}</Text>
             </View>

@@ -1,21 +1,71 @@
-import React from 'react';
-import { StyleSheet, Text, View, SafeAreaView, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, Text, View, SafeAreaView, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useSmartHomeStore } from '@/store/smartHomeStore';
 import colors from '@/constants/colors';
 import { Thermometer, Droplets, Sun, Wind } from 'lucide-react-native';
 import LineChart from '@/components/LineChart';
 
 export default function EnvironmentScreen() {
-  const { environmentData } = useSmartHomeStore();
+  const { 
+    environmentData, 
+    historicalEnvironmentData,
+    fetchEnvironmentData,
+    fetchHistoricalEnvironmentData,
+    isLoading,
+    error 
+  } = useSmartHomeStore();
 
-  // Mock data for charts
-  const temperatureData = [22.5, 22.8, 23.1, 23.4, 23.5, 23.3, 23.2, 23.0, 22.9, 23.1, 23.3, 23.5];
-  const humidityData = [42, 43, 45, 46, 45, 44, 43, 45, 46, 47, 45, 45];
-  const lightData = [65, 68, 70, 72, 75, 78, 80, 82, 80, 75, 70, 68];
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  useEffect(() => {
+    fetchEnvironmentData();
+    fetchHistoricalEnvironmentData();
+  }, [fetchEnvironmentData, fetchHistoricalEnvironmentData]);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([
+      fetchEnvironmentData(),
+      fetchHistoricalEnvironmentData()
+    ]);
+    setRefreshing(false);
+  }, [fetchEnvironmentData, fetchHistoricalEnvironmentData]);
+
+  const formatChartData = (data: { created_at: string; value: string }[] | undefined) => {
+    if (!data) return [];
+    return data.map(item => parseFloat(item.value));
+  };
+
+  if (isLoading && !historicalEnvironmentData) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading environment data...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.retryText} onPress={onRefresh}>Tap to retry</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <View style={styles.header}>
           <Text style={styles.title}>Environment</Text>
           <Text style={styles.subtitle}>Monitor your home environment</Text>
@@ -70,7 +120,7 @@ export default function EnvironmentScreen() {
           <Text style={styles.sectionTitle}>Temperature (Last 12 Hours)</Text>
           <View style={styles.chartCard}>
             <LineChart 
-              data={temperatureData} 
+              data={formatChartData(historicalEnvironmentData?.temperature)} 
               color={colors.primary}
               unit="°C"
             />
@@ -81,7 +131,7 @@ export default function EnvironmentScreen() {
           <Text style={styles.sectionTitle}>Humidity (Last 12 Hours)</Text>
           <View style={styles.chartCard}>
             <LineChart 
-              data={humidityData} 
+              data={formatChartData(historicalEnvironmentData?.humidity)} 
               color={colors.secondary}
               unit="%"
             />
@@ -92,7 +142,7 @@ export default function EnvironmentScreen() {
           <Text style={styles.sectionTitle}>Light Level (Last 12 Hours)</Text>
           <View style={styles.chartCard}>
             <LineChart 
-              data={lightData} 
+              data={formatChartData(historicalEnvironmentData?.lightLevel)} 
               color="#FFC107"
               unit="%"
             />
@@ -183,5 +233,32 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    color: colors.error,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  retryText: {
+    fontSize: 16,
+    color: colors.primary,
+    textDecorationLine: 'underline',
   },
 });

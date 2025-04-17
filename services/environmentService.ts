@@ -1,8 +1,13 @@
 import api from './api';
-import { EnvironmentData } from '@/types/smartHome';
+import { EnvironmentData, HistoricalEnvironmentData } from '@/types/smartHome';
 
 export const getEnvironmentData = async (): Promise<EnvironmentData> => {
   const response = await api.get('/environment');
+  return response.data;
+};
+
+export const getHistoricalEnvironmentData = async (): Promise<HistoricalEnvironmentData> => {
+  const response = await api.get('/environment/all');
   return response.data;
 };
 
