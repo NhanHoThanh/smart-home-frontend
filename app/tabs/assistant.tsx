@@ -1,43 +1,44 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  SafeAreaView, 
-  ScrollView, 
-  TouchableOpacity, 
-  TextInput, 
-  KeyboardAvoidingView, 
+import React, { useState, useRef, useEffect } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  SafeAreaView,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  KeyboardAvoidingView,
   Platform,
-  Animated
-} from 'react-native';
-import { useSmartHomeStore } from '@/store/smartHomeStore';
-import colors from '@/constants/colors';
-import { Mic, Send, Trash2, Bot } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
+  Animated,
+  Modal,
+  NativeSyntheticEvent, // Import NativeSyntheticEvent
+} from "react-native";
+import { useSmartHomeStore } from "@/store/smartHomeStore";
+import colors from "@/constants/colors";
+import { Mic, Send, Trash2, Bot } from "lucide-react-native";
+import * as Haptics from "expo-haptics";
 
 export default function AssistantScreen() {
-  const { 
-    aiAssistant, 
-    startListening, 
-    stopListening, 
-    clearCommandHistory, 
+  const {
+    aiAssistant,
+    startListening,
+    stopListening,
+    clearCommandHistory,
     addCommandToHistory,
     devices,
     toggleDevice,
-    updateDeviceTemperature
+    updateDeviceTemperature,
   } = useSmartHomeStore();
-  
-  const [message, setMessage] = useState('');
-  const [isListening, setIsListening] = useState(false);
+
+  const [message, setMessage] = useState("");
   const [pulseAnim] = useState(new Animated.Value(1));
   const scrollViewRef = useRef<ScrollView>(null);
+  const listeningTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Thêm ref để lưu timeout
 
-  // Start pulse animation when listening
   useEffect(() => {
     let pulseAnimation: Animated.CompositeAnimation;
-    
-    if (isListening) {
+
+    if (aiAssistant.isListening) {
       pulseAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -52,107 +53,138 @@ export default function AssistantScreen() {
           }),
         ])
       );
-      
+
       pulseAnimation.start();
     } else {
       pulseAnim.setValue(1);
+      if (listeningTimeoutRef.current) {
+        clearTimeout(listeningTimeoutRef.current);
+        listeningTimeoutRef.current = null;
+      }
     }
-    
+
     return () => {
       if (pulseAnimation) {
         pulseAnimation.stop();
       }
+      if (listeningTimeoutRef.current) {
+        clearTimeout(listeningTimeoutRef.current);
+        listeningTimeoutRef.current = null;
+      }
     };
-  }, [isListening, pulseAnim]);
+  }, [aiAssistant.isListening, pulseAnim]);
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
-  
+
   const handleSend = () => {
-    if (message.trim() === '') return;
-    
-    if (Platform.OS !== 'web') {
+    if (message.trim() === "") return;
+
+    if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    
+
     processUserInput(message);
-    setMessage('');
+    setMessage("");
   };
-  
+
   const handleMicPress = () => {
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
-    
-    setIsListening(true);
-    
-    // Simulate voice recognition after 2 seconds
-    setTimeout(() => {
-      setIsListening(false);
-      
-      // Generate a random natural language command
-      const naturalCommands = [
-        "I'm feeling cold",
-        "It's too dark in here",
-        "I'm going to bed",
-        "Turn everything off",
-        "I need more light in the kitchen"
-      ];
-      
-      const randomCommand = naturalCommands[Math.floor(Math.random() * naturalCommands.length)];
-      processUserInput(randomCommand);
-    }, 2000);
+    if (!aiAssistant.isListening) {
+      startListening();
+
+      // Simulate voice recognition after 2 seconds
+      listeningTimeoutRef.current = setTimeout(() => {
+        stopListening();
+        listeningTimeoutRef.current = null; // Clear the ref after timeout
+
+        // Generate a random natural language command
+        const naturalCommands = [
+          "I'm feeling cold",
+          "It's too dark in here",
+          "I'm going to bed",
+          "Turn everything off",
+          "I need more light in the kitchen",
+        ];
+
+        const randomCommand =
+          naturalCommands[Math.floor(Math.random() * naturalCommands.length)];
+        processUserInput(randomCommand);
+      }, 2000);
+    }
   };
-  
+
   const processUserInput = (input: string) => {
     // Process natural language input
-    let response = '';
-    
+    let response = "";
+
     // Cold/temperature related
-    if (input.toLowerCase().includes('cold') || input.toLowerCase().includes('chilly')) {
-      const climateDevices = devices.filter(d => d.type === 'climate');
+    if (
+      input.toLowerCase().includes("cold") ||
+      input.toLowerCase().includes("chilly")
+    ) {
+      const climateDevices = devices.filter((d) => d.type === "climate");
       if (climateDevices.length > 0) {
         const device = climateDevices[0];
         if (device.temperature) {
           const newTemp = device.temperature + 2;
           updateDeviceTemperature(device.id, newTemp);
-          response = `I've increased the temperature in the ${getRoomName(device.roomId)} to ${newTemp}°C.`;
+          response = `I've increased the temperature in the ${getRoomName(
+            device.roomId
+          )} to ${newTemp}°C.`;
         }
       } else {
         response = "I couldn't find any climate control devices to adjust.";
       }
     }
     // Light related
-    else if (input.toLowerCase().includes('dark') || input.toLowerCase().includes('light')) {
-      const lightDevices = devices.filter(d => d.type === 'light' && !d.status);
+    else if (
+      input.toLowerCase().includes("dark") ||
+      input.toLowerCase().includes("light")
+    ) {
+      const lightDevices = devices.filter(
+        (d) => d.type === "light" && !d.status
+      );
       if (lightDevices.length > 0) {
-        lightDevices.slice(0, 2).forEach(device => toggleDevice(device.id));
-        response = `I've turned on the lights in the ${getRoomName(lightDevices[0].roomId)}.`;
+        lightDevices.slice(0, 2).forEach((device) => toggleDevice(device.id));
+        response = `I've turned on the lights in the ${getRoomName(
+          lightDevices[0].roomId
+        )}.;`;
       } else {
         response = "All lights are already on.";
       }
     }
     // Bedtime related
-    else if (input.toLowerCase().includes('bed') || input.toLowerCase().includes('sleep')) {
-      const bedroomLights = devices.filter(d => 
-        d.type === 'light' && 
-        d.status && 
-        getRoomName(d.roomId).toLowerCase().includes('bed')
+    else if (
+      input.toLowerCase().includes("bed") ||
+      input.toLowerCase().includes("sleep")
+    ) {
+      const bedroomLights = devices.filter(
+        (d) =>
+          d.type === "light" &&
+          d.status &&
+          getRoomName(d.roomId).toLowerCase().includes("bed")
       );
-      
+
       if (bedroomLights.length > 0) {
-        bedroomLights.forEach(device => toggleDevice(device.id));
-        response = "I've turned off the bedroom lights and set the temperature for optimal sleeping.";
+        bedroomLights.forEach((device) => toggleDevice(device.id));
+        response =
+          "I've turned off the bedroom lights and set the temperature for optimal sleeping.";
       } else {
         response = "I've set your home to night mode. Sleep well!";
       }
     }
     // Turn everything off
-    else if (input.toLowerCase().includes('everything off') || input.toLowerCase().includes('turn all')) {
-      const onDevices = devices.filter(d => d.status);
-      onDevices.forEach(device => toggleDevice(device.id));
+    else if (
+      input.toLowerCase().includes("everything off") ||
+      input.toLowerCase().includes("turn all")
+    ) {
+      const onDevices = devices.filter((d) => d.status);
+      onDevices.forEach((device) => toggleDevice(device.id));
       response = `I've turned off all ${onDevices.length} active devices.`;
     }
     // Default response
@@ -162,138 +194,171 @@ export default function AssistantScreen() {
         "I've taken care of that for you.",
         "Your smart home has been updated according to your preferences.",
         "I've made the changes you requested.",
-        "Consider it done!"
+        "Consider it done!",
       ];
       response = responses[Math.floor(Math.random() * responses.length)];
     }
-    
+
     addCommandToHistory(input, response);
-    
+
     // Scroll to bottom after adding new message
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
   };
-  
+
   const getRoomName = (roomId: string) => {
     const rooms = {
-      '1': 'Living Room',
-      '2': 'Kitchen',
-      '3': 'Bedroom',
-      '4': 'Bathroom',
-      '5': 'Office'
+      "1": "Living Room",
+      "2": "Kitchen",
+      "3": "Bedroom",
+      "4": "Bathroom",
+      "5": "Office",
     };
-    return (rooms as any)[roomId] || 'Home';
+    return (rooms as any)[roomId] || "Home";
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>AI Assistant</Text>
-        {aiAssistant.commandHistory.length > 0 && (
-          <TouchableOpacity 
-            style={styles.clearButton}
-            onPress={clearCommandHistory}
-          >
-            <Trash2 size={20} color={colors.error} />
-            <Text style={styles.clearButtonText}>Clear</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <ScrollView 
-        style={styles.chatContainer}
-        ref={scrollViewRef}
-        showsVerticalScrollIndicator={false}
+    <>
+      <Modal
+        visible={aiAssistant.isListening}
+        animationType="fade"
+        transparent
+        onRequestClose={() => stopListening()} 
       >
-        <View style={styles.welcomeMessage}>
-          <View style={styles.botIconContainer}>
-            <Bot size={24} color={colors.primary} />
-          </View>
-          <View style={styles.welcomeTextContainer}>
-            <Text style={styles.welcomeTitle}>Hello! I'm your Smart Home Assistant</Text>
-            <Text style={styles.welcomeSubtitle}>
-              Ask me to control your devices or tell me how you feel, and I'll take care of the rest.
-            </Text>
-          </View>
-        </View>
-        
-        {aiAssistant.commandHistory.map((item, index) => (
-          <View key={index} style={styles.messageGroup}>
-            <View style={styles.userMessage}>
-              <Text style={styles.userMessageText}>{item.command}</Text>
-              <Text style={styles.messageTime}>{formatTime(item.timestamp)}</Text>
-            </View>
-            <View style={styles.botMessage}>
-              <View style={styles.botMessageContent}>
-                <View style={styles.botAvatar}>
-                  <Bot size={16} color={colors.primary} />
-                </View>
-                <Text style={styles.botMessageText}>{item.response}</Text>
+        <TouchableOpacity
+          style={styles.geminiOverlay}
+          activeOpacity={1}
+          onPressOut={() => stopListening()} 
+        >
+          <TouchableOpacity style={styles.geminiBox} activeOpacity={1}>
+            <Text style={styles.geminiText}>Listening...</Text>
+            <Animated.View style={{ transform: [{ scale: aiAssistant.isListening ? pulseAnim : 1 }] }}>
+              <View style={styles.micButton2}>
+                <Bot size={24} color="#fff" />
               </View>
-              <Text style={styles.messageTime}>{formatTime(item.timestamp + 1000)}</Text>
-            </View>
-          </View>
-        ))}
-        
-        {aiAssistant.commandHistory.length === 0 && (
-          <View style={styles.suggestionsContainer}>
-            <Text style={styles.suggestionsTitle}>Try saying or typing:</Text>
-            {[
-              "I'm feeling cold",
-              "Turn on the lights in the living room",
-              "I'm going to bed",
-              "Turn everything off"
-            ].map((suggestion, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={styles.suggestionBubble}
-                onPress={() => processUserInput(suggestion)}
-              >
-                <Text style={styles.suggestionText}>{suggestion}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-        
-        <View style={styles.spacer} />
-      </ScrollView>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={100}
-        style={styles.inputContainer}
-      >
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.input}
-            placeholder="Type a message..."
-            value={message}
-            onChangeText={setMessage}
-            onSubmitEditing={handleSend}
-            returnKeyType="send"
-          />
-          
-          {message.length > 0 ? (
-            <TouchableOpacity 
-              style={styles.sendButton}
-              onPress={handleSend}
-            >
-              <Send size={20} color={colors.primary} />
-            </TouchableOpacity>
-          ) : (
-            <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-              <TouchableOpacity 
-                style={[styles.micButton, isListening && styles.micButtonActive]}
-                onPress={handleMicPress}
-              >
-                <Mic size={20} color={isListening ? colors.cardBackground : colors.primary} />
-              </TouchableOpacity>
             </Animated.View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>AI Assistant</Text>
+          {aiAssistant.commandHistory.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={clearCommandHistory}
+            >
+              <Trash2 size={20} color={colors.error} />
+              <Text style={styles.clearButtonText}>Clear</Text>
+            </TouchableOpacity>
           )}
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+        <ScrollView
+          style={styles.chatContainer}
+          ref={scrollViewRef}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.welcomeMessage}>
+            <View style={styles.botIconContainer}>
+              <Bot size={24} color={colors.primary} />
+            </View>
+            <View style={styles.welcomeTextContainer}>
+              <Text style={styles.welcomeTitle}>
+                Hello! I'm your Smart Home Assistant
+              </Text>
+              <Text style={styles.welcomeSubtitle}>
+                Ask me to control your devices or tell me how you feel, and I'll
+                take care of the rest.
+              </Text>
+            </View>
+          </View>
+
+          {aiAssistant.commandHistory.map((item, index) => (
+            <View key={index} style={styles.messageGroup}>
+              <View style={styles.userMessage}>
+                <Text style={styles.userMessageText}>{item.command}</Text>
+                <Text style={styles.messageTime}>
+                  {formatTime(item.timestamp)}
+                </Text>
+              </View>
+              <View style={styles.botMessage}>
+                <View style={styles.botMessageContent}>
+                  <View style={styles.botAvatar}>
+                    <Bot size={16} color={colors.primary} />
+                  </View>
+                  <Text style={styles.botMessageText}>{item.response}</Text>
+                </View>
+                <Text style={styles.messageTime}>
+                  {formatTime(item.timestamp + 1000)}
+                </Text>
+              </View>
+            </View>
+          ))}
+
+          {aiAssistant.commandHistory.length === 0 && (
+            <View style={styles.suggestionsContainer}>
+              <Text style={styles.suggestionsTitle}>Try saying or typing:</Text>
+              {[
+                "I'm feeling cold",
+                "Turn on the lights in the living room",
+                "I'm going to bed",
+                "Turn everything off",
+              ].map((suggestion, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.suggestionBubble}
+                  onPress={() => processUserInput(suggestion)}
+                >
+                  <Text style={styles.suggestionText}>{suggestion}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          <View style={styles.spacer} />
+        </ScrollView>
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={100}
+          style={styles.inputContainer}
+        >
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              placeholder="Type a message..."
+              value={message}
+              onChangeText={setMessage}
+              onSubmitEditing={handleSend}
+              returnKeyType="send"
+            />
+
+            {message.length > 0 ? (
+              <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+                <Send size={20} color={colors.primary} />
+              </TouchableOpacity>
+            ) : (
+              <Animated.View style={{ transform: [{ scale: aiAssistant.isListening ? pulseAnim : 1 }] }}>
+                <TouchableOpacity
+                  style={[
+                    styles.micButton,
+                    aiAssistant.isListening && styles.micButtonActive,
+                  ]}
+                  onPress={handleMicPress}
+                >
+                  <Mic
+                    size={20}
+                    color={aiAssistant.isListening ? colors.cardBackground : colors.primary}
+                  />
+                </TouchableOpacity>
+              </Animated.View>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -303,25 +368,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.text,
   },
   clearButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   clearButtonText: {
     marginLeft: 4,
     color: colors.error,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   chatContainer: {
     flex: 1,
@@ -332,15 +397,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   botIconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: `${colors.primary}20`,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   welcomeTextContainer: {
@@ -348,7 +413,7 @@ const styles = StyleSheet.create({
   },
   welcomeTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
     marginBottom: 4,
   },
@@ -360,39 +425,39 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   userMessage: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     backgroundColor: colors.primary,
     borderRadius: 18,
     borderBottomRightRadius: 4,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    maxWidth: '80%',
+    maxWidth: "80%",
     marginBottom: 4,
   },
   userMessageText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
   },
   botMessage: {
-    alignSelf: 'flex-start',
-    maxWidth: '80%',
+    alignSelf: "flex-start",
+    maxWidth: "80%",
   },
   botMessageContent: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: colors.cardBackground,
     borderRadius: 18,
     borderBottomLeftRadius: 4,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   botAvatar: {
     width: 28,
     height: 28,
     borderRadius: 14,
     backgroundColor: `${colors.primary}20`,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 8,
   },
   botMessageText: {
@@ -404,7 +469,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 4,
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
   },
   suggestionsContainer: {
     marginTop: 16,
@@ -412,7 +477,7 @@ const styles = StyleSheet.create({
   },
   suggestionsTitle: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     color: colors.textSecondary,
     marginBottom: 12,
   },
@@ -422,7 +487,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     marginBottom: 8,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   suggestionText: {
     color: colors.primary,
@@ -438,8 +503,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   input: {
     flex: 1,
@@ -455,18 +520,62 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: `${colors.primary}20`,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   micButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: `${colors.primary}20`,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   micButtonActive: {
     backgroundColor: colors.primary,
+  },
+  geminiOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.2)",
+  },
+
+  geminiBox: {
+    width: "92%",
+    marginBottom: 30,
+    padding: 16,
+    backgroundColor: "#1c1c1e",
+    borderRadius: 24,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#3b82f6",
+    shadowColor: "#3b82f6",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    elevation: 12,
+  },
+
+  geminiText: {
+    color: "gray",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+
+  micButton2: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#3b82f6",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#3b82f6",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 8,
   },
 });

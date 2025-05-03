@@ -9,12 +9,11 @@ import EnvironmentPanel from '@/components/EnvironmentPanel';
 
 export default function HomeScreen() {
   const { devices, selectedRoomId } = useSmartHomeStore();
-
   const filteredDevices = selectedRoomId
     ? devices.filter(device => device.roomId === selectedRoomId)
     : devices;
 
-  return (
+    return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <ScrollView showsVerticalScrollIndicator={false}>

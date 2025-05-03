@@ -153,6 +153,30 @@ export const devices: Device[] = [
     icon: 'air-vent',
     temperature: 24,
   },
+  {
+    id: '14',
+    name: 'Front Door Lock',
+    type: 'security',
+    roomId: '5',
+    status: true,
+    icon: 'lock',
+  },
+    {
+      id: '15',
+      name: 'Backyard Light',
+      type: 'light',
+      roomId: '5',
+      status: false,
+      icon: 'lamp-ceiling',
+      brightness: 80,
+    },
+    {id: '16',
+      name: 'Ceiling Fan',
+      type: 'fan',
+      roomId: '5',
+      status: true,
+      icon: 'fan'
+    }
 ];
 
 // Sample detected entities for cameras

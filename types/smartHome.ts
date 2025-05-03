@@ -8,13 +8,14 @@ export interface Room {
 export interface Device {
   id: string;
   name: string;
-  type: 'light' | 'climate' | 'entertainment' | 'security' | 'appliance';
+  type: 'light' | 'climate' | 'entertainment' | 'security' | 'appliance' | 'fan' ;
   roomId: string;
   status: boolean;
   icon: string;
   brightness?: number;
   temperature?: number;
   color?: string;
+  speed?: number; 
 }
 
 export interface DetectedEntity {

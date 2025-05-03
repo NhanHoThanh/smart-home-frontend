@@ -33,6 +33,7 @@ interface SmartHomeState {
   toggleCameraOnline: (cameraId: string) => void;
   addDetectedEntity: (cameraId: string, entity: DetectedEntity) => void;
   updateDeviceColor: (deviceId: string, color:string) => void;
+  updateDeviceSpeed: (deviceId: string, speed: number) => void;
 
 }
 
@@ -89,6 +90,17 @@ export const useSmartHomeStore = create<SmartHomeState>()(
               : device
           ),
         })),
+        updateDeviceSpeed: (deviceId: string, speed: number) =>
+          set((state) => ({
+            devices: state.devices.map((device) =>
+              device.id === deviceId
+                ? {
+                    ...device,
+                    speed,
+                  }
+                : device
+            ),
+          })),
       
       selectRoom: (roomId: string | null) => 
         set({ selectedRoomId: roomId }),
