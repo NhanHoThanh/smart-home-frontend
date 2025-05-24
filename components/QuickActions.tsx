@@ -68,14 +68,6 @@ export default function QuickActions() {
           <Text style={styles.actionText}>Power Off All</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.actionButton}
-        >
-          <View style={[styles.iconContainer, { backgroundColor: '#FFC10720' }]}>
-            <Thermometer size={24} color="#FFC107" />
-          </View>
-          <Text style={styles.actionText}>Eco Mode</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import colors from '@/constants/colors';
-import { Home, Settings, BarChart3, Camera, Bot } from 'lucide-react-native';
+import { Home, Settings, BarChart3, Camera, Bot, TestTube } from 'lucide-react-native';
 import AIAssistant from '@/components/AIAssistant';
 
 export default function TabLayout() {
@@ -49,6 +49,13 @@ export default function TabLayout() {
         options={{
           title: "Environment",
           tabBarIcon: ({ color }) => <BarChart3 size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="test"
+        options={{
+          title: "API Test",
+          tabBarIcon: ({ color }) => <TestTube size={24} color={color} />,
         }}
       />
       <Tabs.Screen

@@ -118,7 +118,7 @@ export default function AssistantScreen() {
         if (device.temperature) {
           const newTemp = device.temperature + 2;
           updateDeviceTemperature(device.id, newTemp);
-          response = `I've increased the temperature in the ${getRoomName(device.roomId)} to ${newTemp}°C.`;
+          response = `I've increased the temperature in the ${getRoomName(device.room_id)} to ${newTemp}°C.`;
         }
       } else {
         response = "I couldn't find any climate control devices to adjust.";
@@ -129,7 +129,7 @@ export default function AssistantScreen() {
       const lightDevices = devices.filter(d => d.type === 'light' && !d.status);
       if (lightDevices.length > 0) {
         lightDevices.slice(0, 2).forEach(device => toggleDevice(device.id));
-        response = `I've turned on the lights in the ${getRoomName(lightDevices[0].roomId)}.`;
+        response = `I've turned on the lights in the ${getRoomName(lightDevices[0].room_id)}.`;
       } else {
         response = "All lights are already on.";
       }
@@ -139,7 +139,7 @@ export default function AssistantScreen() {
       const bedroomLights = devices.filter(d => 
         d.type === 'light' && 
         d.status && 
-        getRoomName(d.roomId).toLowerCase().includes('bed')
+        getRoomName(d.room_id).toLowerCase().includes('bed')
       );
       
       if (bedroomLights.length > 0) {

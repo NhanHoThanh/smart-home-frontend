@@ -2,6 +2,7 @@ import api from './api';
 import { Room } from '@/types/smartHome';
 
 export const getRooms = async (): Promise<Room[]> => {
+  console.log('Fetching rooms...');
   const response = await api.get('/rooms');
   console.log(response.data);
   return response.data;

@@ -16,7 +16,14 @@ export default function LineChart({ data, color, unit }: LineChartProps) {
   // Calculate chart dimensions
   const chartWidth = Dimensions.get('window').width - 64; // Accounting for padding
   const chartHeight = 150;
-  const barWidth = chartWidth / data.length - 4;
+  const barWidth = Math.min(chartWidth / data.length - 4, 20); // Cap maximum bar width
+  
+  // Format hour labels
+  const formatHourLabel = (index: number) => {
+    const hour = new Date();
+    hour.setHours(hour.getHours() - (data.length - 1 - index));
+    return `${hour.getHours()}:00`;
+  };
   
   return (
     <View style={styles.container}>
@@ -44,6 +51,7 @@ export default function LineChart({ data, color, unit }: LineChartProps) {
                   ]} 
                 />
                 <View style={styles.dataPoint} />
+                <Text style={styles.valueLabel}>{value.toFixed(1)}</Text>
               </View>
             );
           })}
@@ -52,15 +60,12 @@ export default function LineChart({ data, color, unit }: LineChartProps) {
       
       <View style={styles.xAxis}>
         {data.map((_, index) => {
-          // Only show every other hour label to avoid crowding
-          if (index % 2 !== 0 && index !== data.length - 1) return null;
-          
-          const hour = new Date();
-          hour.setHours(hour.getHours() - (data.length - 1 - index));
+          // Show fewer labels to avoid crowding
+          if (index % 3 !== 0 && index !== data.length - 1) return null;
           
           return (
             <Text key={index} style={styles.hourLabel}>
-              {hour.getHours()}:00
+              {formatHourLabel(index)}
             </Text>
           );
         })}
@@ -136,6 +141,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     position: 'absolute',
     bottom: -3,
+  },
+  valueLabel: {
+    position: 'absolute',
+    top: -20,
+    fontSize: 10,
+    color: colors.textSecondary,
   },
   xAxis: {
     flexDirection: 'row',

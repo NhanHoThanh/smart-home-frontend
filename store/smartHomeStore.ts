@@ -31,6 +31,7 @@ interface SmartHomeState {
   toggleDevice: (deviceId: string) => Promise<void>;
   updateDeviceBrightness: (deviceId: string, brightness: number) => Promise<void>;
   updateDeviceTemperature: (deviceId: string, temperature: number) => Promise<void>;
+  updateFanSpeed: (deviceId: string, speed: number) => Promise<void>;
   selectRoom: (roomId: string | null) => void;
   updateEnvironmentData: (data: Partial<EnvironmentData>) => Promise<void>;
   startListening: () => void;
@@ -41,6 +42,7 @@ interface SmartHomeState {
   toggleCameraMotion: (cameraId: string) => void;
   toggleCameraOnline: (cameraId: string) => void;
   addDetectedEntity: (cameraId: string, entity: DetectedEntity) => void;
+  
 }
 
 export const useSmartHomeStore = create<SmartHomeState>()(
@@ -125,6 +127,21 @@ export const useSmartHomeStore = create<SmartHomeState>()(
         }
       },
       
+      updateFanSpeed: async (deviceId: string, speed: number) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updatedDevice = await deviceService.updateFanSpeed(deviceId, speed);
+          set((state) => ({
+            devices: state.devices.map((device) => 
+              device.id === deviceId ? updatedDevice : device
+            ),
+            isLoading: false,
+          }));
+        } catch (error) {
+          set({ error: 'Failed to update fan speed', isLoading: false });
+        }
+      },
+      
       updateDeviceBrightness: async (deviceId: string, brightness: number) => {
         set({ isLoading: true, error: null });
         try {
@@ -169,6 +186,7 @@ export const useSmartHomeStore = create<SmartHomeState>()(
           set({ error: 'Failed to update environment data', isLoading: false });
         }
       },
+      
       
       // Local Actions (not using API)
       startListening: () => 

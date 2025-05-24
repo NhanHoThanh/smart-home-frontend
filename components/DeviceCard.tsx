@@ -10,7 +10,7 @@ interface DeviceCardProps {
 }
 
 export default function DeviceCard({ device }: DeviceCardProps) {
-  const { toggleDevice } = useSmartHomeStore();
+  const { toggleDevice, updateFanSpeed } = useSmartHomeStore();
 
   return (
     <TouchableOpacity
@@ -20,7 +20,6 @@ export default function DeviceCard({ device }: DeviceCardProps) {
       ]}
       onPress={() => {
         console.log('Device ID:', device.id);
-        device.status = !device.status;
         toggleDevice(device.id);
       }}
     >
@@ -29,30 +28,54 @@ export default function DeviceCard({ device }: DeviceCardProps) {
       </View>
       <View style={styles.infoContainer}>
         <Text style={styles.deviceName}>{device.name}</Text>
-        <Text style={styles.deviceStatus}>
-          {device.status ? 'On' : 'Off'}
-          {device.type === 'light' && device.brightness !== undefined && device.status
-            ? ` • ${device.brightness}%`
-            : ''}
-          {device.type === 'climate' && device.temperature !== undefined && device.status
-            ? ` • ${device.temperature}°C`
-            : ''}
-        </Text>
       </View>
       <View style={styles.toggleContainer}>
-        <View 
-          style={[
-            styles.toggleButton,
-            device.status ? styles.toggleActive : styles.toggleInactive,
-          ]}
-        >
+        {device.type === 'fan' ? (
+          <View style={styles.fanSpeedContainer}>
+            {[0, 1, 2, 3].map((speed) => {
+              const modeSpeed = speed === 0 ? 0 : speed * 25 + 25;
+              const deviceSpeed = device.value || 0;
+              const isActive = deviceSpeed === modeSpeed;
+              // console.log(`Fan ${device.id}: deviceSpeed=${deviceSpeed}, currentSpeed=${modeSpeed}, speed=${speed}, isActive=${isActive}`);
+              return (
+                <TouchableOpacity
+                  key={speed}
+                  style={[
+                    styles.speedButton,
+                    isActive && styles.speedButtonActive,
+                  ]}
+                  onPress={async () => {
+                    console.log(`Setting fan ${device.id} to speed ${speed} (${modeSpeed}%)`);
+                    await updateFanSpeed(device.id, modeSpeed);
+                  }}
+                >
+                  <Text 
+                    style={[
+                      styles.speedButtonText,
+                      isActive && styles.speedButtonTextActive,
+                    ]}
+                  >
+                    {speed}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ) : (
           <View 
             style={[
-              styles.toggleCircle,
-              device.status ? styles.toggleCircleActive : styles.toggleCircleInactive,
-            ]} 
-          />
-        </View>
+              styles.toggleButton,
+              device.status ? styles.toggleActive : styles.toggleInactive,
+            ]}
+          >
+            <View 
+              style={[
+                styles.toggleCircle,
+                device.status ? styles.toggleCircleActive : styles.toggleCircleInactive,
+              ]} 
+            />
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -125,5 +148,28 @@ const styles = StyleSheet.create({
   toggleCircleInactive: {
     backgroundColor: colors.inactive,
     alignSelf: 'flex-start',
+  },
+  fanSpeedContainer: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  speedButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  speedButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  speedButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  speedButtonTextActive: {
+    color: 'white',
   },
 });

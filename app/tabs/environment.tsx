@@ -4,6 +4,8 @@ import { useSmartHomeStore } from '@/store/smartHomeStore';
 import colors from '@/constants/colors';
 import { Thermometer, Droplets, Sun, Wind } from 'lucide-react-native';
 import LineChart from '@/components/LineChart';
+import { configureNotifications, sendNotification } from '@/utils/notification';
+import { requestNotificationPermissions, checkEnvironmentThresholds } from '@/utils/notification';
 
 export default function EnvironmentScreen() {
   const { 
@@ -16,6 +18,30 @@ export default function EnvironmentScreen() {
   } = useSmartHomeStore();
 
   const [refreshing, setRefreshing] = React.useState(false);
+
+  useEffect(() => {
+    const setUpNotifications = async () => {
+      const permission = await requestNotificationPermissions();
+      if (permission) {
+        configureNotifications();
+      }
+    };
+    setUpNotifications()
+  }, []);
+
+  useEffect(()=>{ 
+    const checkThresholds = async () => {
+      const alerts = checkEnvironmentThresholds(environmentData);
+      if (alerts.length > 0) {
+        for (const alert of alerts) {
+          await sendNotification("Warning: ", alert);
+        }
+      }
+    };
+    if (environmentData) {
+      checkThresholds();
+    }
+  }, [environmentData]);
 
   useEffect(() => {
     fetchEnvironmentData();
@@ -33,7 +59,26 @@ export default function EnvironmentScreen() {
 
   const formatChartData = (data: { created_at: string; value: string }[] | undefined) => {
     if (!data) return [];
-    return data.map(item => parseFloat(item.value));
+    
+    // Group data by hour
+    const hourlyData: { [hour: string]: number[] } = {};
+    
+    data.forEach(item => {
+      const date = new Date(item.created_at);
+      const hour = date.getHours();
+      if (!hourlyData[hour]) {
+        hourlyData[hour] = [];
+      }
+      hourlyData[hour].push(parseFloat(item.value));
+    });
+    
+    // Calculate average for each hour
+    const hours = Object.keys(hourlyData).sort((a, b) => parseInt(a) - parseInt(b));
+    return hours.map(hour => {
+      const values = hourlyData[hour];
+      const average = values.reduce((sum, val) => sum + val, 0) / values.length;
+      return parseFloat(average.toFixed(1));
+    });
   };
 
   if (isLoading && !historicalEnvironmentData) {

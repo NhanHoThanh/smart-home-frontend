@@ -20,12 +20,12 @@ export default function HomeScreen() {
     ? devices.filter(device => device.room_id === selectedRoomId)
     : devices;
 
-  console.log('Current state:', {
-    allDevices: devices,
-    selectedRoom: selectedRoomId,
-    filteredDevices,
-    error
-  });
+  // console.log('Current state:', {
+  //   allDevices: devices,
+  //   selectedRoom: selectedRoomId,
+  //   filteredDevices,
+  //   error
+  // });
 
   return (
     <SafeAreaView style={styles.container}>

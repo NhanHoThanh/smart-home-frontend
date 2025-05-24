@@ -18,8 +18,13 @@ export const createDevice = async (device: Omit<Device, 'id'>): Promise<Device> 
   return response.data;
 };
 
-export const updateDevice = async (id: string, device: Partial<Device>): Promise<Device> => {
-  const response = await api.put(`/devices/${id}`, device);
+// export const updateDevice = async (id: string, device: Partial<Device>): Promise<Device> => {
+//   const response = await api.put(`/devices/${id}`, device);
+//   return response.data;
+// };
+
+export const updateFanSpeed = async (id: string, value: number): Promise<Device> => {
+  const response = await api.put(`/devices/${id}`, { value });
   return response.data;
 };
 
