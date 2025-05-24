@@ -1,11 +1,13 @@
 import React from 'react';
 import { StyleSheet, Text, View, SafeAreaView, ScrollView, Switch, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
-import { Moon, Sun, Bell, Lock, User, Heart } from 'lucide-react-native';
+import { Moon, Sun, Bell, Lock, User, Heart, Camera } from 'lucide-react-native';
 
 export default function SettingsScreen() {
   const [darkMode, setDarkMode] = React.useState(false);
   const [notifications, setNotifications] = React.useState(true);
+  const router = useRouter();
   
   return (
     <SafeAreaView style={styles.container}>
@@ -71,6 +73,18 @@ export default function SettingsScreen() {
               <View style={styles.settingContent}>
                 <Text style={styles.settingTitle}>Privacy Settings</Text>
                 <Text style={styles.settingDescription}>Manage data sharing and permissions</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.settingRow}
+              onPress={() => router.push('/face-id/register')}
+            >
+              <View style={styles.settingIconContainer}>
+                <Camera size={20} color={colors.primary} />
+              </View>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingTitle}>Face Registration</Text>
+                <Text style={styles.settingDescription}>Register your face for security access</Text>
               </View>
             </TouchableOpacity>
           </View>

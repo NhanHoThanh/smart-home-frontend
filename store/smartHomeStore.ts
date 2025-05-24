@@ -29,6 +29,7 @@ interface SmartHomeState {
   fetchEnvironmentData: () => Promise<void>;
   fetchHistoricalEnvironmentData: () => Promise<void>;
   toggleDevice: (deviceId: string) => Promise<void>;
+  updateDeviceValue: (deviceId: string, value: number) => Promise<void>;
   updateDeviceBrightness: (deviceId: string, brightness: number) => Promise<void>;
   updateDeviceTemperature: (deviceId: string, temperature: number) => Promise<void>;
   updateFanSpeed: (deviceId: string, speed: number) => Promise<void>;
@@ -303,6 +304,21 @@ export const useSmartHomeStore = create<SmartHomeState>()(
               : camera
           ),
         })),
+
+      updateDeviceValue: async (deviceId: string, value: number) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updatedDevice = await deviceService.updateDeviceValue(deviceId, value);
+          set((state) => ({
+            devices: state.devices.map((device) => 
+              device.id === deviceId ? updatedDevice : device
+            ),
+            isLoading: false,
+          }));
+        } catch (error) {
+          set({ error: 'Failed to update device value', isLoading: false });
+        }
+      },
     }),
     {
       name: 'smart-home-storage',

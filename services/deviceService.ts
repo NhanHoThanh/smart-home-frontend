@@ -48,6 +48,11 @@ export const updateDeviceTemperature = async (id: string, temperature: number): 
   return response.data;
 };
 
+export const updateDeviceValue = async (id: string, value: number): Promise<Device> => {
+  const response = await api.put(`/devices/${id}`, { value });
+  return response.data;
+};
+
 export const deleteDevice = async (id: string): Promise<void> => {
   await api.delete(`/devices/${id}`);
 }; 
