@@ -456,6 +456,83 @@ GET /assistant/history
 DELETE /assistant/history
 ```
 
+### Face Recognition
+
+#### Register User
+
+```
+POST /face-recognition/register
+```
+
+**Request Body (multipart/form-data):**
+- `name`: string - User's name
+- `image`: file - Face image (JPEG/PNG)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "userId": "user_123",
+  "message": "User registered successfully"
+}
+```
+
+#### Authenticate User
+
+```
+POST /face-recognition/authenticate
+```
+
+**Request Body (multipart/form-data):**
+- `image`: file - Face image for authentication (JPEG/PNG)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "userId": "user_123",
+  "userName": "John Doe",
+  "confidence": 0.95,
+  "message": "Authentication successful"
+}
+```
+
+#### Get Registered Users
+
+```
+GET /face-recognition/users
+```
+
+**Response:**
+
+```json
+[
+  {
+    "id": "user_123",
+    "name": "John Doe",
+    "addedAt": 1640995200000,
+    "lastAuthenticated": 1640995800000
+  }
+]
+```
+
+#### Remove User
+
+```
+DELETE /face-recognition/users/{userId}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "User removed successfully"
+}
+```
+
 ## WebSocket Endpoints (Cuối kì)
 
 ### Real-time Device Updates

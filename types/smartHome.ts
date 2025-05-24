@@ -64,3 +64,24 @@ export interface AIAssistantState {
     timestamp: number;
   }>;
 }
+
+export interface FaceRecognitionUser {
+  id: string;
+  name: string;
+  addedAt: number;
+  lastAuthenticated?: number;
+}
+
+export interface AuthenticationResult {
+  success: boolean;
+  userId?: string;
+  userName?: string;
+  confidence?: number;
+  message?: string;
+}
+
+export interface RegisterUserResult {
+  success: boolean;
+  userId?: string;
+  message?: string;
+}

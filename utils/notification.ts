@@ -51,6 +51,8 @@ export async function requestNotificationPermissions() {
 export function configureNotifications() {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList  : true,
       shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: false,

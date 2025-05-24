@@ -3,6 +3,8 @@ import { StyleSheet, Text, View, SafeAreaView, ScrollView, RefreshControl, Touch
 import { useSmartHomeStore } from '@/store/smartHomeStore';
 import colors from '@/constants/colors';
 import { Camera, UserPlus, Lock, Unlock, Shield, Clock, CheckCircle, XCircle, Scan } from 'lucide-react-native';
+import FaceCamera from '@/components/FaceCamera';
+import * as faceRecognitionService from '@/services/faceRecognitionService';
 
 interface User {
   id: string;
@@ -27,9 +29,17 @@ export default function FaceRecognitionScreen() {
   const [newUserName, setNewUserName] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [scanMode, setScanMode] = useState<'add' | 'auth' | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraMode, setCameraMode] = useState<'register' | 'authenticate'>('authenticate');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Authentication expires after 5 minutes (300,000 ms)
   const AUTH_DURATION = 5 * 60 * 1000;
+
+  useEffect(() => {
+    // Load registered users on component mount
+    loadRegisteredUsers();
+  }, []);
 
   useEffect(() => {
     // Check if authentication has expired
@@ -45,11 +55,23 @@ export default function FaceRecognitionScreen() {
     return () => clearInterval(interval);
   }, [authStatus]);
 
-  const onRefresh = React.useCallback(() => {
+  const loadRegisteredUsers = async () => {
+    try {
+      setIsLoading(true);
+      const users = await faceRecognitionService.getRegisteredUsers();
+      setRecognizedUsers(users);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      Alert.alert('Error', 'Failed to load registered users');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
+    await loadRegisteredUsers();
+    setRefreshing(false);
   }, []);
 
   const startAddingUser = () => {
@@ -58,70 +80,86 @@ export default function FaceRecognitionScreen() {
   };
 
   const startFaceScanning = (mode: 'add' | 'auth') => {
-    setScanMode(mode);
-    setIsScanning(true);
-    
-    // Simulate face scanning process
-    setTimeout(() => {
-      if (mode === 'add') {
-        handleAddUser();
-      } else {
-        handleAuthentication();
+    if (mode === 'add') {
+      if (!newUserName.trim()) {
+        Alert.alert('Error', 'Please enter a user name first');
+        return;
       }
-      setIsScanning(false);
-      setScanMode(null);
-    }, 3000);
-  };
-
-  const handleAddUser = () => {
-    if (newUserName.trim()) {
-      const newUser: User = {
-        id: Date.now().toString(),
-        name: newUserName.trim(),
-        addedAt: Date.now(),
-      };
-      
-      setRecognizedUsers(prev => [...prev, newUser]);
+      setCameraMode('register');
       setIsAddingUser(false);
-      setNewUserName('');
-      
-      Alert.alert('Success', `${newUser.name} has been added to face recognition database.`);
+    } else {
+      setCameraMode('authenticate');
+    }
+    setShowCamera(true);
+  };
+
+  const handleCameraCapture = async (imageUri: string) => {
+    setShowCamera(false);
+    setIsLoading(true);
+
+    try {
+      if (cameraMode === 'register') {
+        await handleAddUser(imageUri);
+      } else {
+        await handleAuthentication(imageUri);
+      }
+    } catch (error) {
+      console.error('Error processing image:', error);
+      Alert.alert('Error', 'Failed to process image. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleAuthentication = () => {
-    // Simulate face recognition - randomly pick a user or fail
-    if (recognizedUsers.length === 0) {
-      Alert.alert('Authentication Failed', 'No users found in the database.');
-      return;
-    }
-
-    const isRecognized = Math.random() > 0.3; // 70% success rate for demo
-    
-    if (isRecognized) {
-      const randomUser = recognizedUsers[Math.floor(Math.random() * recognizedUsers.length)];
-      const now = Date.now();
+  const handleAddUser = async (imageUri: string) => {
+    try {
+      const result = await faceRecognitionService.registerUser(newUserName.trim(), imageUri);
       
-      setAuthStatus({
-        isAuthenticated: true,
-        userId: randomUser.id,
-        userName: randomUser.name,
-        authenticatedAt: now,
-        expiresAt: now + AUTH_DURATION,
-      });
+      if (result.success) {
+        setNewUserName('');
+        await loadRegisteredUsers(); // Reload the user list
+        Alert.alert('Success', `${newUserName} has been registered successfully!`);
+      } else {
+        Alert.alert('Registration Failed', result.message || 'Failed to register user');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to register user. Please try again.');
+    }
+  };
 
-      // Update user's last authentication
-      setRecognizedUsers(prev => 
-        prev.map(user => 
-          user.id === randomUser.id 
-            ? { ...user, lastAuthenticated: now }
-            : user
-        )
-      );
+  const handleAuthentication = async (imageUri: string) => {
+    try {
+      const result = await faceRecognitionService.authenticateUser(imageUri);
+      
+      if (result.success && result.userId && result.userName) {
+        const now = Date.now();
+        
+        setAuthStatus({
+          isAuthenticated: true,
+          userId: result.userId,
+          userName: result.userName,
+          authenticatedAt: now,
+          expiresAt: now + AUTH_DURATION,
+        });
 
-      Alert.alert('Authentication Successful', `Welcome back, ${randomUser.name}!`);
-    } else {
-      Alert.alert('Authentication Failed', 'Face not recognized. Please try again.');
+        // Update user's last authentication in local state
+        setRecognizedUsers(prev => 
+          prev.map(user => 
+            user.id === result.userId 
+              ? { ...user, lastAuthenticated: now }
+              : user
+          )
+        );
+
+        Alert.alert(
+          'Authentication Successful', 
+          `Welcome back, ${result.userName}!\nConfidence: ${Math.round((result.confidence || 0) * 100)}%`
+        );
+      } else {
+        Alert.alert('Authentication Failed', result.message || 'Face not recognized. Please try again.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Authentication failed. Please try again.');
     }
   };
 
@@ -138,7 +176,7 @@ export default function FaceRecognitionScreen() {
     );
   };
 
-  const removeUser = (userId: string) => {
+  const removeUser = async (userId: string) => {
     Alert.alert(
       'Remove User',
       'Are you sure you want to remove this user from face recognition?',
@@ -147,12 +185,27 @@ export default function FaceRecognitionScreen() {
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: () => {
-            setRecognizedUsers(prev => prev.filter(user => user.id !== userId));
-            
-            // If the removed user was authenticated, clear auth
-            if (authStatus.userId === userId) {
-              setAuthStatus({ isAuthenticated: false });
+          onPress: async () => {
+            try {
+              setIsLoading(true);
+              const result = await faceRecognitionService.removeUser(userId);
+              
+              if (result.success) {
+                await loadRegisteredUsers(); // Reload the user list
+                
+                // If the removed user was authenticated, clear auth
+                if (authStatus.userId === userId) {
+                  setAuthStatus({ isAuthenticated: false });
+                }
+                
+                Alert.alert('Success', 'User removed successfully');
+              } else {
+                Alert.alert('Error', result.message || 'Failed to remove user');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to remove user. Please try again.');
+            } finally {
+              setIsLoading(false);
             }
           },
         },
@@ -227,18 +280,18 @@ export default function FaceRecognitionScreen() {
           <TouchableOpacity
             style={[styles.actionButton, styles.authenticateButton]}
             onPress={() => startFaceScanning('auth')}
-            disabled={isScanning}
+            disabled={isLoading}
           >
             <Shield size={20} color="white" />
             <Text style={styles.actionButtonText}>
-              {isScanning && scanMode === 'auth' ? 'Scanning...' : 'Authenticate'}
+              {isLoading ? 'Processing...' : 'Authenticate'}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.actionButton, styles.addUserButton]}
             onPress={startAddingUser}
-            disabled={isScanning}
+            disabled={isLoading}
           >
             <UserPlus size={20} color="white" />
             <Text style={styles.actionButtonText}>Add User</Text>
@@ -351,40 +404,30 @@ export default function FaceRecognitionScreen() {
                 style={[styles.modalButton, styles.scanButton]}
                 onPress={() => {
                   if (newUserName.trim()) {
-                    setIsAddingUser(false);
                     startFaceScanning('add');
                   } else {
                     Alert.alert('Error', 'Please enter a user name');
                   }
                 }}
+                disabled={isLoading}
               >
                 <Scan size={16} color="white" />
-                <Text style={styles.scanButtonText}>Scan Face</Text>
+                <Text style={styles.scanButtonText}>
+                  {isLoading ? 'Processing...' : 'Scan Face'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* Scanning Modal */}
-      <Modal
-        visible={isScanning}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {}}
-      >
-        <View style={styles.scanningOverlay}>
-          <View style={styles.scanningContainer}>
-            <Camera size={64} color={colors.primary} />
-            <Text style={styles.scanningText}>
-              {scanMode === 'add' ? 'Scanning face for registration...' : 'Authenticating...'}
-            </Text>
-            <Text style={styles.scanningSubtext}>
-              Please look at the camera
-            </Text>
-          </View>
-        </View>
-      </Modal>
+      {/* Face Camera */}
+      <FaceCamera
+        isVisible={showCamera}
+        onCapture={handleCameraCapture}
+        onClose={() => setShowCamera(false)}
+        mode={cameraMode}
+      />
     </SafeAreaView>
   );
 }
@@ -640,32 +683,5 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
-  },
-  scanningOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scanningContainer: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    width: '80%',
-    maxWidth: 300,
-  },
-  scanningText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  scanningSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 8,
-    textAlign: 'center',
   },
 });
