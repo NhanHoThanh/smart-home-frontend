@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Alert, Platform } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 import { Camera, RotateCcw, CheckCircle, X } from 'lucide-react-native';
 import colors from '@/constants/colors';
+import WebCamera from './WebCamera';
 
 interface FaceCameraProps {
   isVisible: boolean;
@@ -13,6 +14,19 @@ interface FaceCameraProps {
 }
 
 export default function FaceCamera({ isVisible, onCapture, onClose, mode }: FaceCameraProps) {
+  // If running on web, use WebCamera component
+  if (Platform.OS === 'web') {
+    return (
+      <WebCamera 
+        isVisible={isVisible}
+        onCapture={onCapture}
+        onClose={onClose}
+        mode={mode}
+      />
+    );
+  }
+
+  // For mobile platforms, use the existing expo-camera implementation
   const [facing, setFacing] = useState<CameraType>('front');
   const [permission, requestPermission] = useCameraPermissions();
   const [mediaLibraryPermission, requestMediaLibraryPermission] = MediaLibrary.usePermissions();

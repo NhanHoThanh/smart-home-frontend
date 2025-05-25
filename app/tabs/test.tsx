@@ -13,6 +13,7 @@ import {
 import { useSmartHomeStore } from '@/store/smartHomeStore';
 import colors from '@/constants/colors';
 import api from '@/services/api';
+import FaceRecognitionTest from '@/components/FaceRecognitionTest';
 
 export default function TestScreen() {
   const { 
@@ -35,6 +36,7 @@ export default function TestScreen() {
   const [customBody, setCustomBody] = useState('');
   const [testResult, setTestResult] = useState<any>(null);
   const [testLoading, setTestLoading] = useState(false);
+  const [showFaceRecognitionTest, setShowFaceRecognitionTest] = useState(false);
 
   const testEndpoint = async (endpoint: string, method: string = 'GET', body?: any) => {
     setTestLoading(true);
@@ -140,13 +142,35 @@ export default function TestScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>API Test</Text>
-          <Text style={styles.subtitle}>Test API endpoints and store actions</Text>
+      {showFaceRecognitionTest ? (
+        <View style={styles.fullScreenTest}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => setShowFaceRecognitionTest(false)}
+          >
+            <Text style={styles.backButtonText}>← Back to API Tests</Text>
+          </TouchableOpacity>
+          <FaceRecognitionTest />
         </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <Text style={styles.title}>API Test</Text>
+            <Text style={styles.subtitle}>Test API endpoints and store actions</Text>
+          </View>
 
-        {/* Store State Display */}
+          {/* Face Recognition Test */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Face Recognition Test</Text>
+            <TouchableOpacity 
+              style={styles.faceRecognitionButton} 
+              onPress={() => setShowFaceRecognitionTest(true)}
+            >
+              <Text style={styles.buttonText}>Test Face Recognition System</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Store State Display */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Current Store State</Text>
           <View style={styles.stateCard}>
@@ -280,7 +304,8 @@ export default function TestScreen() {
             </View>
           </View>
         )}
-      </ScrollView>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -458,5 +483,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#333',
     fontFamily: 'monospace',
+  },
+  fullScreenTest: {
+    flex: 1,
+  },
+  backButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: colors.secondary,
+    marginBottom: 10,
+  },
+  backButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  faceRecognitionButton: {
+    backgroundColor: colors.success,
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
   },
 });
