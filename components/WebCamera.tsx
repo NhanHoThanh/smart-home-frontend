@@ -21,7 +21,7 @@ export default function WebCamera({ isVisible, onCapture, onClose, mode }: WebCa
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const startCamera = useCallback(async () => {
-    console.log('🚀 START CAMERA CALLED - videoRef.current:', !!videoRef.current);
+    console.log('START CAMERA CALLED - videoRef.current:', !!videoRef.current);
     
     if (isStartingCamera) {
       console.log('Camera start already in progress, skipping...');
@@ -86,7 +86,7 @@ export default function WebCamera({ isVisible, onCapture, onClose, mode }: WebCa
         const video = videoRef.current;
         
         // Stop any existing playback
-        video.pause();
+        // video.pause();
         
         // Reset the video element completely
         video.removeAttribute('src');
@@ -133,16 +133,19 @@ export default function WebCamera({ isVisible, onCapture, onClose, mode }: WebCa
         video.addEventListener('error', handleError, { once: true });
         
         // Try to play (with error handling)
-        try {
-          await video.play();
-          console.log('Video playback started successfully');
-        } catch (playError) {
-          console.warn('Video play() failed (this is sometimes normal):', playError);
-        }
+        // try {
+        //   await video.play();
+        //   console.log('Video playback started successfully');
+        // } catch (playError) {
+        //   console.warn('Video play() failed (this is sometimes normal):', playError);
+        // }
+        video.addEventListener('canplay', () => {
+          video.play().catch(err => console.error('Play error:', err));
+        }, { once: true });
         
         // Give it time to initialize and check status
         setTimeout(() => {
-          console.log('Video status after 2 seconds:', {
+          console.log('Video status after 2 seconds abcs:', {
             readyState: video.readyState,
             networkState: video.networkState,
             videoWidth: video.videoWidth,
@@ -194,7 +197,7 @@ export default function WebCamera({ isVisible, onCapture, onClose, mode }: WebCa
       setStream(null);
     }
     if (videoRef.current) {
-      videoRef.current.pause();
+      // videoRef.current.pause();
       videoRef.current.srcObject = null;
     }
   }, [stream]);
@@ -241,18 +244,7 @@ export default function WebCamera({ isVisible, onCapture, onClose, mode }: WebCa
   };
 
   const takePicture = async () => {
-    const USE_MOCK_CAPTURE = false;
-    
-    if (USE_MOCK_CAPTURE && isBrowser) {
-      try {
-        console.log('Using mock camera capture for development');
-        const mockImageUri = await generateMockCameraCapture();
-        onCapture(mockImageUri);
-        return;
-      } catch (error) {
-        console.error('Error generating mock capture:', error);
-      }
-    }
+
     
     if (!videoRef.current || !canvasRef.current) {
       Alert.alert('Error', 'Camera not ready. Please try again.');
