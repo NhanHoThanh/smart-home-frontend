@@ -8,7 +8,7 @@ export interface Room {
 export interface Device {
   id: string;
   name: string;
-  type: 'light' | 'climate' | 'entertainment' | 'security' | 'appliance'|'fan';
+  type: 'light' | 'climate' | 'entertainment' | 'security' | 'appliance' | 'fan' | 'door';
   room_id: string;
   status: boolean;
   icon: string;

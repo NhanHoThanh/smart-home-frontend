@@ -35,3 +35,7 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 .vercel
+
+# Documentation
+PROJECT_STRUCTURE.md
+things-to-do.md
