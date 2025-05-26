@@ -106,7 +106,7 @@ export default function AssistantScreen() {
 
         if (transcript) {
           // Process the transcript
-          await processUserInput(transcript);
+          await processUserInput(transcript.message);
         }
       } catch (error) {
         console.error('Error getting transcript:', error);
@@ -122,22 +122,43 @@ export default function AssistantScreen() {
   
   const processUserInput = async (input: string) => {
     try {
-      // Send command to voice logic API
-      const response = await api.post('/voices/voice_logic', { request: input });
-      
+      // Send command to voice logic API with correct request format
+      const response = await api.post('/voices/voice_logic', {
+        request: input  // Đúng format mà backend yêu cầu
+      });
+
       // Add the interaction to history
-      addCommandToHistory(input, response.data);
+      let responseText;
+      if (typeof response.data === 'string') {
+        responseText = response.data;
+      } else if (response.data && typeof response.data === 'object') {
+        // Backend trả về HistoryPublic model
+        responseText = response.data.response || JSON.stringify(response.data);
+      } else {
+        responseText = JSON.stringify(response.data);
+      }
+
+      addCommandToHistory(input, responseText);
 
       // Scroll to bottom after adding new message
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
-    } catch (error) {
+    } catch (error: any) {
+      // Xử lý lỗi từ backend
+      let errorMsg = "Sorry, I couldn't process that command. Please try again.";
+      if (error.response && error.response.data) {
+        const data = error.response.data;
+        if (data.detail) {
+          if (Array.isArray(data.detail)) {
+            errorMsg = data.detail[0].msg;
+          } else {
+            errorMsg = data.detail;
+          }
+        }
+      }
+      addCommandToHistory(input, errorMsg);
       console.error('Error processing command:', error);
-      addCommandToHistory(
-        input,
-        "Sorry, I couldn't process that command. Please try again."
-      );
     }
   };
   
@@ -217,7 +238,9 @@ export default function AssistantScreen() {
                   <View style={styles.botAvatar}>
                     <Bot size={16} color={colors.primary} />
                   </View>
-                  <Text style={styles.botMessageText}>{item.response}</Text>
+                  <Text style={styles.botMessageText}>
+                    {typeof item.response === 'string' ? item.response : JSON.stringify(item.response)}
+                  </Text>
                 </View>
                 <Text style={styles.messageTime}>{formatTime(item.timestamp + 1000)}</Text>
               </View>

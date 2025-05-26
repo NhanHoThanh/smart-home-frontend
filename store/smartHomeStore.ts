@@ -21,6 +21,7 @@ interface SmartHomeState {
   selectedCamera: Camera | null;
   isLoading: boolean;
   isBackgroundLoading: boolean;
+  isDevicesLoading: boolean;
   error: string | null;
   
   // Actions
@@ -67,6 +68,7 @@ export const useSmartHomeStore = create<SmartHomeState>()(
       },
       isLoading: false,
       isBackgroundLoading: false,
+      isDevicesLoading: false,
       error: null,
       
       // API Actions
@@ -81,13 +83,12 @@ export const useSmartHomeStore = create<SmartHomeState>()(
       },
       
       fetchDevices: async (roomId?: string) => {
-        set({ isBackgroundLoading: true, error: null });
+        set({ isDevicesLoading: true, error: null });
         try {
           const devices = await deviceService.getDevices(roomId);
-          
-          set({ devices, isBackgroundLoading: false });
+          set({ devices, isDevicesLoading: false });
         } catch (error) {
-          set({ error: 'Failed to fetch devices', isBackgroundLoading: false });
+          set({ error: 'Failed to fetch devices', isDevicesLoading: false });
         }
       },
       
@@ -118,7 +119,7 @@ export const useSmartHomeStore = create<SmartHomeState>()(
           set((state) => ({
             devices: state.devices.map((device) => 
               device.id === deviceId 
-                ? { ...device, status: result.status } 
+                ? { ...device, status: result.status ? 'on' : 'off' } 
                 : device
             ),
             isLoading: false,
@@ -134,7 +135,7 @@ export const useSmartHomeStore = create<SmartHomeState>()(
           const updatedDevice = await deviceService.updateFanSpeed(deviceId, speed);
           set((state) => ({
             devices: state.devices.map((device) => 
-              device.id === deviceId ? updatedDevice : device
+              device.id === deviceId ? { ...updatedDevice, status: updatedDevice.status as 'on' | 'off' } : device
             ),
             isLoading: false,
           }));
@@ -149,7 +150,7 @@ export const useSmartHomeStore = create<SmartHomeState>()(
           const updatedDevice = await deviceService.updateDeviceBrightness(deviceId, brightness);
           set((state) => ({
             devices: state.devices.map((device) => 
-              device.id === deviceId ? updatedDevice : device
+              device.id === deviceId ? { ...updatedDevice, status: updatedDevice.status as 'on' | 'off' } : device
             ),
             isLoading: false,
           }));
@@ -164,7 +165,7 @@ export const useSmartHomeStore = create<SmartHomeState>()(
           const updatedDevice = await deviceService.updateDeviceTemperature(deviceId, temperature);
           set((state) => ({
             devices: state.devices.map((device) => 
-              device.id === deviceId ? updatedDevice : device
+              device.id === deviceId ? { ...updatedDevice, status: updatedDevice.status as 'on' | 'off' } : device
             ),
             isLoading: false,
           }));

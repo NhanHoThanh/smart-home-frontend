@@ -9,16 +9,29 @@ import EnvironmentPanel from '@/components/EnvironmentPanel';
 
 
 export default function HomeScreen() {
-  const { devices, selectedRoomId, fetchDevices, error } = useSmartHomeStore();
+  const { 
+    devices, 
+    selectedRoomId, 
+    fetchDevices, 
+    error, 
+    isDevicesLoading 
+  } = useSmartHomeStore();
 
   useEffect(() => {
-    // Background fetch
-    fetchDevices(selectedRoomId || undefined);
+    const loadDevices = async () => {
+      try {
+        await fetchDevices(selectedRoomId || undefined);
+      } catch (error) {
+        console.error('Error fetching devices:', error);
+      }
+    };
+
+    loadDevices();
   }, [selectedRoomId, fetchDevices]);
 
   const filteredDevices = selectedRoomId
-    ? devices.filter(device => device.room_id === selectedRoomId)
-    : devices;
+    ? devices.filter(device => device.room_id === selectedRoomId && !device.name.toLowerCase().includes('sensor'))
+    : devices.filter(device => !device.name.toLowerCase().includes('sensor'));
 
   // console.log('Current state:', {
   //   allDevices: devices,
@@ -48,6 +61,11 @@ export default function HomeScreen() {
           {error ? (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : isDevicesLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.loadingText}>Loading devices...</Text>
             </View>
           ) : (
             <>
@@ -115,6 +133,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.cardBackground,
     borderRadius: 12,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: colors.textSecondary,
   },
   errorContainer: {
     padding: 24,

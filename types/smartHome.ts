@@ -10,8 +10,8 @@ export interface Device {
   name: string;
   type: 'light' | 'climate' | 'entertainment' | 'security' | 'appliance' | 'fan' | 'door';
   room_id: string;
-  status: boolean;
-  icon: string;
+  status: 'on' | 'off';
+  icon: string | null;
   value?: number;
 }
 
