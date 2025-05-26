@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, SafeAreaView, ScrollView, RefreshControl, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
+import { StyleSheet, Text, View, SafeAreaView, ScrollView, RefreshControl, TouchableOpacity, Alert, Modal, TextInput, Platform } from 'react-native';
 import { useSmartHomeStore } from '@/store/smartHomeStore';
 import colors from '@/constants/colors';
 import { Camera, UserPlus, Lock, Unlock, Shield, Clock, CheckCircle, XCircle, Scan, X } from 'lucide-react-native';
@@ -32,6 +32,8 @@ export default function FaceRecognitionScreen() {
   const [showCamera, setShowCamera] = useState(false);
   const [cameraMode, setCameraMode] = useState<'register' | 'authenticate'>('authenticate');
   const [isLoading, setIsLoading] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [userToRemove, setUserToRemove] = useState<string | null>(null);
 
   // Authentication expires after 5 minutes (300,000 ms)
   const AUTH_DURATION = 5 * 60 * 1000;
@@ -194,48 +196,73 @@ export default function FaceRecognitionScreen() {
     );
   };
 
-  const removeUser = async (userId: string) => {
+  const removeUser = (userId: string) => {
     console.log('removeUser called with userId:', userId);
-    Alert.alert(
-      'Remove User',
-      'Are you sure you want to remove this user from face recognition?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('Starting user removal process for:', userId);
-              setIsLoading(true);
-              const result = await faceRecognitionService.removeUser(userId);
-              console.log('Remove user result:', result);
-              
-              if (result.success) {
-                console.log('User removed successfully, reloading user list');
-                await loadRegisteredUsers(); // Reload the user list
-                
-                // If the removed user was authenticated, clear auth
-                if (authStatus.userId === userId) {
-                  console.log('Clearing authentication for removed user');
-                  setAuthStatus({ isAuthenticated: false });
-                }
-                
-                Alert.alert('Success', 'User removed successfully');
-              } else {
-                console.log('User removal failed:', result.message);
-                Alert.alert('Error', result.message || 'Failed to remove user');
-              }
-            } catch (error) {
-              console.error('Error removing user:', error);
-              Alert.alert('Error', 'Failed to remove user. Please try again.');
-            } finally {
-              setIsLoading(false);
-            }
+    console.log('About to show Alert.alert');
+    console.log('Platform:', Platform.OS);
+    
+    // For web platform, use custom modal
+    if (Platform.OS === 'web') {
+      console.log('Using custom modal for web platform');
+      setUserToRemove(userId);
+      setShowRemoveConfirm(true);
+      return;
+    }
+    
+    // For native platforms, use Alert.alert
+    try {
+      Alert.alert(
+        'Remove User',
+        'Are you sure you want to remove this user from face recognition?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove',
+            style: 'destructive',
+            onPress: () => {
+              console.log('Alert Remove button pressed - executing removal');
+              handleUserRemoval(userId);
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+      console.log('Alert.alert called successfully');
+    } catch (error) {
+      console.error('Error showing alert:', error);
+      // Fallback to custom modal if Alert fails
+      setUserToRemove(userId);
+      setShowRemoveConfirm(true);
+    }
+  };
+
+  const handleUserRemoval = async (userId: string) => {
+    try {
+      console.log('Starting user removal process for:', userId);
+      setIsLoading(true);
+      const result = await faceRecognitionService.removeUser(userId);
+      console.log('Remove user result:', result);
+      
+      if (result.success) {
+        console.log('User removed successfully, reloading user list');
+        await loadRegisteredUsers(); // Reload the user list
+        
+        // If the removed user was authenticated, clear auth
+        if (authStatus.userId === userId) {
+          console.log('Clearing authentication for removed user');
+          setAuthStatus({ isAuthenticated: false });
+        }
+        
+        Alert.alert('Success', 'User removed successfully');
+      } else {
+        console.log('User removal failed:', result.message);
+        Alert.alert('Error', result.message || 'Failed to remove user');
+      }
+    } catch (error) {
+      console.error('Error removing user:', error);
+      Alert.alert('Error', 'Failed to remove user. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const formatTimeAgo = (timestamp: number) => {
@@ -495,6 +522,50 @@ export default function FaceRecognitionScreen() {
           </View>
         </Modal>
       )}
+
+      {/* Remove User Confirmation Modal */}
+      <Modal
+        visible={showRemoveConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRemoveConfirm(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Remove User</Text>
+            <Text style={styles.confirmModalText}>
+              Are you sure you want to remove this user from face recognition?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowRemoveConfirm(false);
+                  setUserToRemove(null);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.removeConfirmButton]}
+                onPress={() => {
+                  setShowRemoveConfirm(false);
+                  if (userToRemove) {
+                    console.log('Modal Remove button pressed - executing removal');
+                    handleUserRemoval(userToRemove);
+                  }
+                  setUserToRemove(null);
+                }}
+                disabled={isLoading}
+              >
+                <Text style={styles.removeConfirmButtonText}>
+                  {isLoading ? 'Removing...' : 'Remove'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -772,5 +843,20 @@ const styles = StyleSheet.create({
   cameraHeaderSubtitle: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
+  },
+  confirmModalText: {
+    fontSize: 16,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  removeConfirmButton: {
+    backgroundColor: colors.error,
+  },
+  removeConfirmButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

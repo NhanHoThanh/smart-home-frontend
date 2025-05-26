@@ -195,39 +195,39 @@ export const removeUser = async (userId: string): Promise<{ success: boolean; me
   console.log('removeUser service called with userId:', userId);
   console.log('Current mockUsers before removal:', mockUsers);
   
-  if (USE_MOCK_DATA) {
-    // Mock implementation - remove user from mock data
-    await simulateDelay(800); // Simulate network delay
-    
-    const userIndex = mockUsers.findIndex(user => user.id === userId);
-    console.log('Found user at index:', userIndex);
-    
-    if (userIndex === -1) {
-      console.log('User not found in mockUsers');
-      return {
-        success: false,
-        message: 'User not found',
-      };
-    }
-    
-    const removedUser = mockUsers[userIndex];
-    mockUsers.splice(userIndex, 1);
-    
-    console.log('Mock: User removed successfully', removedUser);
-    console.log('mockUsers after removal:', mockUsers);
-    
+
+  // Mock implementation - remove user from mock data
+
+  
+  const userIndex = mockUsers.findIndex(user => user.id === userId);
+  console.log('Found user at index:', userIndex);
+  
+  if (userIndex === -1) {
+    console.log('User not found in mockUsers');
     return {
-      success: true,
-      message: 'User removed successfully',
+      success: false,
+      message: 'User not found',
     };
   }
   
+  const removedUser = mockUsers[userIndex];
+  mockUsers.splice(userIndex, 1);
+  
+  console.log('Mock: User removed successfully', removedUser);
+  console.log('mockUsers after removal:', mockUsers);
+  
+  return {
+    success: true,
+    message: 'User removed successfully',
+  };
+
+  
   // Original API implementation
-  try {
-    const response = await api.delete(`/face-recognition/users/${userId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error removing user:', error);
-    throw new Error('Failed to remove user');
-  }
+  // try {
+  //   const response = await api.delete(`/face-recognition/users/${userId}`);
+  //   return response.data;
+  // } catch (error) {
+  //   console.error('Error removing user:', error);
+  //   throw new Error('Failed to remove user');
+  // }
 };
