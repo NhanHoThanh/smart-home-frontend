@@ -192,13 +192,18 @@ export const getRegisteredUsers = async (): Promise<FaceRecognitionUser[]> => {
 
 // Remove a user from the face recognition system
 export const removeUser = async (userId: string): Promise<{ success: boolean; message?: string }> => {
+  console.log('removeUser service called with userId:', userId);
+  console.log('Current mockUsers before removal:', mockUsers);
+  
   if (USE_MOCK_DATA) {
     // Mock implementation - remove user from mock data
     await simulateDelay(800); // Simulate network delay
     
     const userIndex = mockUsers.findIndex(user => user.id === userId);
+    console.log('Found user at index:', userIndex);
     
     if (userIndex === -1) {
+      console.log('User not found in mockUsers');
       return {
         success: false,
         message: 'User not found',
@@ -209,6 +214,7 @@ export const removeUser = async (userId: string): Promise<{ success: boolean; me
     mockUsers.splice(userIndex, 1);
     
     console.log('Mock: User removed successfully', removedUser);
+    console.log('mockUsers after removal:', mockUsers);
     
     return {
       success: true,
