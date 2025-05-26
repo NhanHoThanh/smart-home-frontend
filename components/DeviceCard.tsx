@@ -76,9 +76,9 @@ export default function DeviceCard({ device }: DeviceCardProps) {
   };
 
   const handlePress = () => {
-    if (device.type === "door" && !device.status && !isAuthenticating) {
+    if (device.type === "door" && device.status === "off" && !isAuthenticating) {
       startFaceRecognition();
-    } else if (device.type === "door" && device.status) {
+    } else if (device.type === "door" && device.status === "on") {
       // Handle door closing (no face recognition needed)
       toggleDevice(device.id);
     } else {
@@ -90,7 +90,7 @@ export default function DeviceCard({ device }: DeviceCardProps) {
     <>
       <View style={[
         styles.card,
-        device.status && styles.activeCard,
+        device.status === "on" && styles.activeCard,
       ]}>
         <View style={styles.mainContent}>
       <View style={styles.iconContainer}>
@@ -98,15 +98,15 @@ export default function DeviceCard({ device }: DeviceCardProps) {
       </View>
       <View style={styles.infoContainer}>
         <Text style={styles.deviceName}>{device.name}</Text>
-            <Text style={styles.deviceStatus}>
-              {device.status ? "Open" : "Closed"}
-              {device.type === "light" && device.status && (
-                ` • Brightness: ${device.value || 0}%`
-              )}
-            </Text>
+        <Text style={styles.deviceStatus}>
+          {device.status === "on" ? "On" : "Off"}
+          {device.type === "light" && device.status === "on" && (
+            ` • Brightness: ${device.value || 0}%`
+          )}
+        </Text>
       </View>
       <View style={styles.toggleContainer}>
-            {device.type === "fan" ? (
+        {device.type === "fan" ? (
           <View style={styles.fanSpeedContainer}>
             {[0, 1, 2, 3].map((speed) => {
               const modeSpeed = speed === 0 ? 0 : speed * 25 + 25;
@@ -137,41 +137,41 @@ export default function DeviceCard({ device }: DeviceCardProps) {
             })}
           </View>
         ) : (
-              <TouchableOpacity onPress={handlePress}>
-          <View 
-            style={[
-              styles.toggleButton,
-              device.status ? styles.toggleActive : styles.toggleInactive,
-            ]}
-          >
+          <TouchableOpacity onPress={handlePress}>
             <View 
               style={[
-                styles.toggleCircle,
-                device.status ? styles.toggleCircleActive : styles.toggleCircleInactive,
-              ]} 
-                  />
-                </View>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-        {device.type === "light" && device.status && (
-          <View style={styles.sliderContainer}>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={100}
-              step={1}
-              value={device.value || 0}
-              onValueChange={(value) => {
-                debouncedUpdateValue(device.id, value);
-              }}
-              minimumTrackTintColor={colors.primary}
-              maximumTrackTintColor={colors.border}
-              thumbTintColor={colors.primary}
-            />
-          </View>
+                styles.toggleButton,
+                device.status === "on" ? styles.toggleActive : styles.toggleInactive,
+              ]}
+            >
+              <View 
+                style={[
+                  styles.toggleCircle,
+                  device.status === "on" ? styles.toggleCircleActive : styles.toggleCircleInactive,
+                ]} 
+              />
+            </View>
+          </TouchableOpacity>
         )}
+      </View>
+    </View>
+    {device.type === "light" && device.status === "on" && (
+      <View style={styles.sliderContainer}>
+        <Slider
+          style={styles.slider}
+          minimumValue={0}
+          maximumValue={100}
+          step={1}
+          value={device.value || 0}
+          onValueChange={(value) => {
+            debouncedUpdateValue(device.id, value);
+          }}
+          minimumTrackTintColor={colors.primary}
+          maximumTrackTintColor={colors.border}
+          thumbTintColor={colors.primary}
+        />
+      </View>
+    )}
       </View>
       <Modal visible={showFaceIdModal} transparent animationType="fade">
         <View style={styles.modalContainer}>
