@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
 
   },
   botMessage: {
-    alignSelf: 'flex-start',
+    //alignSelf: 'flex-start',
     maxWidth: '80%',
   },
   botMessageContent: {
