@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Image, ScrollView, Alert } from 'react-native';
 import { useSmartHomeStore } from '@/store/smartHomeStore';
 import colors from '@/constants/colors';
 import { getDeviceIcon } from '@/utils/icons';
@@ -7,7 +7,7 @@ import { Device } from '@/types/smartHome';
 import Slider from '@react-native-community/slider';
 import debounce from 'lodash/debounce';
 import * as ImagePicker from 'expo-image-picker';
-import { faceService } from '@/services/faceService';
+import * as faceRecognitionService from '@/services/faceRecognitionService';
 
 interface DeviceCardProps {
   device: Device;
@@ -18,6 +18,9 @@ export default function DeviceCard({ device }: DeviceCardProps) {
   const [showFaceIdModal, setShowFaceIdModal] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authStatus, setAuthStatus] = useState<"pending" | "success" | "fail" | null>(null);
+  const [isSelectingUser, setIsSelectingUser] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [recognizedUsers, setRecognizedUsers] = useState<any[]>([]);
 
   // Create a debounced version of updateDeviceValue
   const debouncedUpdateValue = useCallback(
@@ -28,12 +31,44 @@ export default function DeviceCard({ device }: DeviceCardProps) {
     []
   );
 
+  const loadRegisteredUsers = async () => {
+    try {
+      const users = await faceRecognitionService.getRegisteredUsers();
+      setRecognizedUsers(users);
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  };
+
   const startFaceRecognition = async () => {
     try {
-      setIsAuthenticating(true);
-      setAuthStatus("pending");
-      setShowFaceIdModal(true);
+      // Load registered users first
+      await loadRegisteredUsers();
+      
+      if (recognizedUsers.length === 0) {
+        throw new Error('No users registered. Please add a user first.');
+      }
 
+      // Show user selection modal
+      setIsSelectingUser(true);
+    } catch (error: any) {
+      console.error('Face recognition error:', error);
+      Alert.alert('Error', error.message || 'Failed to start face recognition');
+    }
+  };
+
+  const handleUserSelection = async () => {
+    if (!selectedUserId) {
+      Alert.alert('Error', 'Please select a user');
+      return;
+    }
+
+    setIsSelectingUser(false);
+    setIsAuthenticating(true);
+    setAuthStatus("pending");
+    setShowFaceIdModal(true);
+
+    try {
       // Request camera permissions
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -57,21 +92,31 @@ export default function DeviceCard({ device }: DeviceCardProps) {
         throw new Error('Failed to capture image');
       }
 
-      // Verify face with API
-      await faceService.verifyFace(device.id, result.assets[0].base64);
+      // Verify face with API using faceRecognitionService
+      const authResult = await faceRecognitionService.authenticateUser(result.assets[0].uri, selectedUserId);
       
-      // If verification successful, toggle the device
-      setAuthStatus("success");
-      toggleDevice(device.id);
+      if (authResult.success) {
+        setAuthStatus("success");
+        toggleDevice(device.id);
+        Alert.alert(
+          'Authentication Successful', 
+          `Welcome back, ${authResult.userName}!\nConfidence: ${Math.round((authResult.confidence || 0) * 100)}%`
+        );
+      } else {
+        setAuthStatus("fail");
+        Alert.alert('Authentication Failed', authResult.message || 'Face not recognized. Please try again.');
+      }
     } catch (error: any) {
       console.error('Face verification error:', error);
       setAuthStatus("fail");
+      Alert.alert('Error', error.message || 'Authentication failed. Please try again.');
     } finally {
       // Keep modal visible for a short time after authentication
       await new Promise((resolve) => setTimeout(resolve, 1500));
       setShowFaceIdModal(false);
       setIsAuthenticating(false);
       setAuthStatus(null);
+      setSelectedUserId('');
     }
   };
 
@@ -174,7 +219,7 @@ export default function DeviceCard({ device }: DeviceCardProps) {
     )}
       </View>
       <Modal visible={showFaceIdModal} transparent animationType="fade">
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalOverlay, styles.modalContainer]}>
           {authStatus === "pending" && (
             <Image
               source={require("@/assets/images/face-id.gif")}
@@ -201,6 +246,65 @@ export default function DeviceCard({ device }: DeviceCardProps) {
             {authStatus === "success" && "Authentication successful"}
             {authStatus === "fail" && "Authentication failed"}
           </Text>
+        </View>
+      </Modal>
+      {/* User Selection Modal */}
+      <Modal
+        visible={isSelectingUser}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsSelectingUser(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, styles.userSelectionModalContainer]}>
+            <Text style={styles.modalTitle}>Select User to Authenticate</Text>
+            <Text style={styles.confirmModalText}>
+              Choose which user you want to authenticate as:
+            </Text>
+            <ScrollView 
+              style={styles.userSelectionContainer}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+            >
+              {recognizedUsers.map(user => (
+                <TouchableOpacity
+                  key={user.id}
+                  style={[
+                    styles.userSelectionItem,
+                    selectedUserId === user.id && styles.userSelectionItemSelected
+                  ]}
+                  onPress={() => setSelectedUserId(user.id)}
+                >
+                  <Text style={[
+                    styles.userSelectionText,
+                    selectedUserId === user.id && styles.userSelectionTextSelected
+                  ]}>
+                    {user.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setIsSelectingUser(false);
+                  setSelectedUserId('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.scanButton]}
+                onPress={handleUserSelection}
+                disabled={isAuthenticating || !selectedUserId}
+              >
+                <Text style={styles.scanButtonText}>
+                  {isAuthenticating ? 'Processing...' : 'Scan Face'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
     </>
@@ -312,11 +416,27 @@ const styles = StyleSheet.create({
     height: 40,
   },
   modalContainer: {
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    maxHeight: '80%',
+  },
+  userSelectionModalContainer: {
+    width: '90%',
+    maxWidth: 400,
+    padding: 24,
+    height: '60%',
+  },
+  userSelectionContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingTop: 20,
+    minHeight: 100,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.cardBackground,
   },
   faceIdGif: {
     resizeMode: 'contain',
@@ -327,5 +447,76 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     marginTop: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  confirmModalText: {
+    fontSize: 16,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  userSelectionItem: {
+    backgroundColor: 'transparent',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  userSelectionItemSelected: {
+    backgroundColor: colors.primary + '20',
+    borderBottomColor: colors.primary,
+  },
+  userSelectionText: {
+    fontSize: 16,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  userSelectionTextSelected: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  modalButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  cancelButton: {
+    backgroundColor: colors.cardBackground,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  scanButton: {
+    backgroundColor: colors.primary,
+  },
+  cancelButtonText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  scanButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

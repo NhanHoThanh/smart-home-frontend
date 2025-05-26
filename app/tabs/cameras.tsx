@@ -285,17 +285,32 @@ export default function FaceRecognitionScreen() {
     }
   };
 
-  const handleDoorControl = (action: 'lock' | 'unlock') => {
+  const handleDoorControl = async (action: 'lock' | 'unlock') => {
     if (!authStatus.isAuthenticated) {
       Alert.alert('Authentication Required', 'Please authenticate first to control the door.');
       return;
     }
 
-    Alert.alert(
-      'Door Control',
-      `Door has been ${action}ed successfully.`,
-      [{ text: 'OK' }]
-    );
+    try {
+      const doorDevice = useSmartHomeStore.getState().devices.find(
+        device => device.type === 'door'
+      );
+
+      if (!doorDevice) {
+        Alert.alert('Error', 'Door device not found');
+        return;
+      }
+      await useSmartHomeStore.getState().toggleDevice(doorDevice.id);
+
+      Alert.alert(
+        'Door Control',
+        `Door has been ${action}ed successfully.`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Error controlling door:', error);
+      Alert.alert('Error', 'Failed to control door. Please try again.');
+    }
   };
 
   const removeUser = (userId: string) => {
@@ -593,7 +608,7 @@ export default function FaceRecognitionScreen() {
         onRequestClose={() => setIsSelectingUser(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
+          <View style={styles.userSelectionModalContainer}>
             <Text style={styles.modalTitle}>Select User to Authenticate</Text>
             <Text style={styles.confirmModalText}>
               Choose which user you want to authenticate as:
@@ -928,9 +943,43 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderRadius: 16,
     padding: 24,
-    width: '80%',
-    maxWidth: 320,
+    width: '90%',
+    maxWidth: 400,
     maxHeight: '80%',
+  },
+  userSelectionModalContainer: {
+    width: '90%',
+    maxWidth: 400,
+    padding: 24,
+    height: '60%',
+  },
+  userSelectionContainer: {
+    flex: 1,
+    minHeight: 100,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.cardBackground,
+  },
+  userSelectionItem: {
+    backgroundColor: 'transparent',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  userSelectionItemSelected: {
+    backgroundColor: colors.primary + '20',
+    borderBottomColor: colors.primary,
+  },
+  userSelectionText: {
+    fontSize: 16,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  userSelectionTextSelected: {
+    color: colors.primary,
+    fontWeight: '600',
   },
   modalTitle: {
     fontSize: 20,
@@ -952,15 +1001,16 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     gap: 12,
+    marginTop: 8,
   },
   modalButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
+    padding: 16,
     borderRadius: 8,
-    gap: 6,
+    gap: 8,
   },
   cancelButton: {
     backgroundColor: colors.cardBackground,
@@ -1023,32 +1073,5 @@ const styles = StyleSheet.create({
   cameraHeaderSubtitle: {
     fontSize: 16,
     color: 'white',
-  },
-  userSelectionContainer: {
-    maxHeight: 150,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    backgroundColor: colors.cardBackground,
-  },
-  userSelectionItem: {
-    backgroundColor: 'transparent',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  userSelectionItemSelected: {
-    backgroundColor: colors.primary + '20',
-    borderBottomColor: colors.primary,
-  },
-  userSelectionText: {
-    fontSize: 16,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  userSelectionTextSelected: {
-    color: colors.primary,
-    fontWeight: '600',
   },
 });
