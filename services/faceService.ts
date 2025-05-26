@@ -3,9 +3,14 @@ import api from './api';
 export const faceService = {
   verifyFace: async (cameraId: string, imageBase64: string) => {
     try {
-      const response = await api.post('/cameras/verify_face', {
-        camera_verify_id: cameraId,
-        image_base64_to_check: imageBase64
+      // Step 1: PUT request to verify_face endpoint
+      await api.put('cameras/verify_face', {
+        image_base64: imageBase64
+      });
+      
+      // Step 2: POST request to verify face  
+      const response = await api.post('cameras/verify_face', {
+        image_base64: imageBase64
       });
       return response.data;
     } catch (error: any) {

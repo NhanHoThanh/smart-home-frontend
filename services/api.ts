@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/v1/';
+const API_URL = 'http://192.168.1.187:8000/v1/';
 //const API_URL = process.env.EXPO_PUBLIC_API_URL || '';//THAY IP CUA Máy ở đây!!!
 
 
@@ -20,6 +20,16 @@ api.interceptors.request.use(
     if (config.url?.endsWith('/')) {
       config.url = config.url.slice(0, -1);
     }
+    
+    // Log the request details for debugging
+    console.log('API Request:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      fullURL: `${config.baseURL}${config.url}`,
+      headers: config.headers,
+      dataSize: config.data ? JSON.stringify(config.data).length : 0
+    });
+    
     return config;
   },
   (error) => Promise.reject(error)

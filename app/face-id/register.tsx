@@ -164,7 +164,7 @@ export default function FaceRegistrationScreen() {
       
       const userId = name.trim().toLowerCase().replace(/\s+/g, '_');
 
-      const response = await api.post('/cameras/register_face', {
+      const response = await api.post('cameras/register_face', {
         user_id: userId,
         image_base64: imageBase64
       });

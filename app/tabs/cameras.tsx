@@ -35,6 +35,9 @@ export default function FaceRecognitionScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [userToRemove, setUserToRemove] = useState<string | null>(null);
+  const [isSelectingUser, setIsSelectingUser] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [currentRegistrationName, setCurrentRegistrationName] = useState('');
 
   // Authentication expires after 5 minutes (300,000 ms)
   const AUTH_DURATION = 5 * 60 * 1000;
@@ -99,13 +102,25 @@ export default function FaceRecognitionScreen() {
         return;
       }
       setCameraMode('register');
+      setCurrentRegistrationName(newUserName.trim()); // Store the name before clearing
       setIsAddingUser(false);
+      startCameraForRegistration();
     } else {
-      setCameraMode('authenticate');
+      // For authentication, show user selection popup first
+      if (recognizedUsers.length === 0) {
+        Alert.alert('Error', 'No users registered. Please add a user first.');
+        return;
+      }
+      setIsSelectingUser(true);
+      return;
     }
+  };
+
+  const startCameraForRegistration = async () => {
+    setCameraMode('register');
 
     if (Platform.OS === 'web') {
-      // WebCamera for web 
+      // Show camera modal for web platform
       setShowCamera(true);
     } else {
       // ImagePicker for mobile 
@@ -118,7 +133,47 @@ export default function FaceRecognitionScreen() {
         }
 
         const result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 1,
+          base64: true,
+        });
+
+        if (!result.canceled && result.assets[0].base64) {
+          const imageUri = result.assets[0].uri;
+          const base64 = result.assets[0].base64;
+          
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const filename = `face-register-${currentRegistrationName}-${timestamp}.jpg`;
+          
+          await handleAddUser(imageUri);
+        }
+      } catch (error) {
+        console.error('Error capturing image:', error);
+        Alert.alert('Error', 'Failed to capture image. Please try again.');
+      }
+    }
+  };
+
+  const startCameraForAuthentication = async () => {
+    setCameraMode('authenticate');
+
+    if (Platform.OS === 'web') {
+      // Show camera modal for web platform
+      setShowCamera(true);
+    } else {
+      // ImagePicker for mobile 
+      try {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        
+        if (status !== 'granted') {
+          Alert.alert('Permission Required', 'Camera permission is required for face recognition.');
+          return;
+        }
+
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ['images'],
           allowsEditing: true,
           aspect: [1, 1],
           quality: 1,
@@ -135,6 +190,7 @@ export default function FaceRecognitionScreen() {
             : `face-auth-${timestamp}.jpg`;
           
           if (cameraMode === 'register') {
+            console.log('Captured image for registration:', filename);
             await handleAddUser(imageUri);
           } else {
             await handleAuthentication(imageUri);
@@ -155,7 +211,7 @@ export default function FaceRecognitionScreen() {
       // Save image locally for debugging/storage
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = cameraMode === 'register' 
-        ? `face-register-${newUserName.trim()}-${timestamp}.jpg`
+        ? `face-register-${currentRegistrationName}-${timestamp}.jpg`
         : `face-auth-${timestamp}.jpg`;
       
       saveImageLocally(imageUri, filename);
@@ -175,12 +231,14 @@ export default function FaceRecognitionScreen() {
 
   const handleAddUser = async (imageUri: string) => {
     try {
-      const result = await faceRecognitionService.registerUser(newUserName.trim(), imageUri);
+      const userName = currentRegistrationName || newUserName.trim(); // Use stored name or fallback
+      const result = await faceRecognitionService.registerUser(userName, imageUri);
       
       if (result.success) {
-        setNewUserName('');
+        setNewUserName(''); // Clear the input
+        setCurrentRegistrationName(''); // Clear the stored name
         await loadRegisteredUsers(); // Reload the user list
-        Alert.alert('Success', `${newUserName} has been registered successfully!`);
+        Alert.alert('Success', `${userName} has been registered successfully!`);
       } else {
         Alert.alert('Registration Failed', result.message || 'Failed to register user');
       }
@@ -191,7 +249,9 @@ export default function FaceRecognitionScreen() {
 
   const handleAuthentication = async (imageUri: string) => {
     try {
-      const result = await faceRecognitionService.authenticateUser(imageUri);
+
+      console.log('Starting authentication with image:', imageUri);
+      const result = await faceRecognitionService.authenticateUser(imageUri, selectedUserId);
       
       if (result.success && result.userId && result.userName) {
         const now = Date.now();
@@ -525,6 +585,74 @@ export default function FaceRecognitionScreen() {
         </View>
       </Modal>
 
+      {/* User Selection Modal for Authentication */}
+      <Modal
+        visible={isSelectingUser}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsSelectingUser(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Select User to Authenticate</Text>
+            <Text style={styles.confirmModalText}>
+              Choose which user you want to authenticate as:
+            </Text>
+            <ScrollView 
+              style={styles.userSelectionContainer}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+            >
+              {recognizedUsers.map(user => (
+                <TouchableOpacity
+                  key={user.id}
+                  style={[
+                    styles.userSelectionItem,
+                    selectedUserId === user.id && styles.userSelectionItemSelected
+                  ]}
+                  onPress={() => setSelectedUserId(user.id)}
+                >
+                  <Text style={[
+                    styles.userSelectionText,
+                    selectedUserId === user.id && styles.userSelectionTextSelected
+                  ]}>
+                    {user.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setIsSelectingUser(false);
+                  setSelectedUserId('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.scanButton]}
+                onPress={() => {
+                  if (selectedUserId) {
+                    setIsSelectingUser(false);
+                    startCameraForAuthentication();
+                  } else {
+                    Alert.alert('Error', 'Please select a user');
+                  }
+                }}
+                disabled={isLoading || !selectedUserId}
+              >
+                <Scan size={16} color="white" />
+                <Text style={styles.scanButtonText}>
+                  {isLoading ? 'Processing...' : 'Scan Face'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Remove User Confirmation Modal */}
       <Modal
         visible={showRemoveConfirm}
@@ -592,7 +720,7 @@ export default function FaceRecognitionScreen() {
               </Text>
               <Text style={styles.cameraHeaderSubtitle}>
                 {cameraMode === 'register' 
-                  ? `Register ${newUserName}` 
+                  ? `Register ${currentRegistrationName}` 
                   : 'Position your face in the frame'
                 }
               </Text>
@@ -802,6 +930,7 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '80%',
     maxWidth: 320,
+    maxHeight: '80%',
   },
   modalTitle: {
     fontSize: 20,
@@ -894,5 +1023,32 @@ const styles = StyleSheet.create({
   cameraHeaderSubtitle: {
     fontSize: 16,
     color: 'white',
+  },
+  userSelectionContainer: {
+    maxHeight: 150,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.cardBackground,
+  },
+  userSelectionItem: {
+    backgroundColor: 'transparent',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  userSelectionItemSelected: {
+    backgroundColor: colors.primary + '20',
+    borderBottomColor: colors.primary,
+  },
+  userSelectionText: {
+    fontSize: 16,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  userSelectionTextSelected: {
+    color: colors.primary,
+    fontWeight: '600',
   },
 });
