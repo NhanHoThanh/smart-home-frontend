@@ -124,18 +124,27 @@ export default function AssistantScreen() {
     try {
       // Send command to voice logic API with correct request format
       const response = await api.post('/voices/voice_logic', {
-        request: input  // Đúng format mà backend yêu cầu
+        request: input
       });
 
       // Add the interaction to history
-      let responseText;
+      let responseText = '';
+      
       if (typeof response.data === 'string') {
         responseText = response.data;
       } else if (response.data && typeof response.data === 'object') {
-        // Backend trả về HistoryPublic model
-        responseText = response.data.response || JSON.stringify(response.data);
-      } else {
-        responseText = JSON.stringify(response.data);
+        // Handle different response formats
+        if (response.data.response) {
+          responseText = response.data.response;
+        } else if (response.data.message) {
+          responseText = response.data.message;
+        } else {
+          responseText = JSON.stringify(response.data);
+        }
+      }
+
+      if (!responseText) {
+        responseText = "I'm sorry, I couldn't process that request.";
       }
 
       addCommandToHistory(input, responseText);
@@ -155,6 +164,8 @@ export default function AssistantScreen() {
           } else {
             errorMsg = data.detail;
           }
+        } else if (data.message) {
+          errorMsg = data.message;
         }
       }
       addCommandToHistory(input, errorMsg);
@@ -226,7 +237,7 @@ export default function AssistantScreen() {
               </Text>
             </View>
           </View>
-          
+          {/*           {aiAssistant.commandHistory.slice().reverse().map((item, index) => ( */}
           {aiAssistant.commandHistory.map((item, index) => (
             <View key={index} style={styles.messageGroup}>
               <View style={styles.userMessage}>
@@ -239,7 +250,7 @@ export default function AssistantScreen() {
                     <Bot size={16} color={colors.primary} />
                   </View>
                   <Text style={styles.botMessageText}>
-                    {typeof item.response === 'string' ? item.response : JSON.stringify(item.response)}
+                    {item.response || "I'm sorry, I couldn't process that request."}
                   </Text>
                 </View>
                 <Text style={styles.messageTime}>{formatTime(item.timestamp + 1000)}</Text>
@@ -390,6 +401,9 @@ const styles = StyleSheet.create({
   userMessageText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   botMessage: {
     alignSelf: 'flex-start',
@@ -403,6 +417,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     alignItems: 'center',
+    minHeight: 44,
   },
   botAvatar: {
     width: 28,
@@ -412,10 +427,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
+    flexShrink: 0,
   },
   botMessageText: {
     color: colors.text,
     fontSize: 16,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
     flex: 1,
   },
   messageTime: {
@@ -423,6 +442,8 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 4,
     alignSelf: 'flex-end',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    includeFontPadding: false,
   },
   suggestionsContainer: {
     marginTop: 16,
