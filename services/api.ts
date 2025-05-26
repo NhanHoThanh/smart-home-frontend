@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/v1/';
+//const API_URL = 'http://localhost:8000/v1/';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.8:8000/v1/';//THAY IP CUA Máy ở đây!!!
+
 
 // Create axios instance with default config
 const api = axios.create({

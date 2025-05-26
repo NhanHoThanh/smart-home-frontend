@@ -4,6 +4,7 @@ import { useSmartHomeStore } from '@/store/smartHomeStore';
 import colors from '@/constants/colors';
 import { Camera, UserPlus, Lock, Unlock, Shield, Clock, CheckCircle, XCircle, Scan, X } from 'lucide-react-native';
 import WebCamera from '@/components/WebCamera';
+import * as ImagePicker from 'expo-image-picker';
 import * as faceRecognitionService from '@/services/faceRecognitionService';
 
 interface User {
@@ -91,7 +92,7 @@ export default function FaceRecognitionScreen() {
     setNewUserName('');
   };
 
-  const startFaceScanning = (mode: 'add' | 'auth') => {
+  const startFaceScanning = async (mode: 'add' | 'auth') => {
     if (mode === 'add') {
       if (!newUserName.trim()) {
         Alert.alert('Error', 'Please enter a user name first');
@@ -102,7 +103,48 @@ export default function FaceRecognitionScreen() {
     } else {
       setCameraMode('authenticate');
     }
-    setShowCamera(true);
+
+    if (Platform.OS === 'web') {
+      // WebCamera for web 
+      setShowCamera(true);
+    } else {
+      // ImagePicker for mobile 
+      try {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        
+        if (status !== 'granted') {
+          Alert.alert('Permission Required', 'Camera permission is required for face recognition.');
+          return;
+        }
+
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 1,
+          base64: true,
+        });
+
+        if (!result.canceled && result.assets[0].base64) {
+          const imageUri = result.assets[0].uri;
+          const base64 = result.assets[0].base64;
+          
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const filename = cameraMode === 'register' 
+            ? `face-register-${newUserName.trim()}-${timestamp}.jpg`
+            : `face-auth-${timestamp}.jpg`;
+          
+          if (cameraMode === 'register') {
+            await handleAddUser(imageUri);
+          } else {
+            await handleAuthentication(imageUri);
+          }
+        }
+      } catch (error) {
+        console.error('Error capturing image:', error);
+        Alert.alert('Error', 'Failed to capture image. Please try again.');
+      }
+    }
   };
 
   const handleCameraCapture = async (imageUri: string) => {
@@ -483,46 +525,6 @@ export default function FaceRecognitionScreen() {
         </View>
       </Modal>
 
-      {/* Camera Modal */}
-      {showCamera && (
-        <Modal
-          visible={showCamera}
-          animationType="slide"
-          presentationStyle="fullScreen"
-          onRequestClose={handleCameraClose}
-        >
-          <View style={styles.cameraContainer}>
-            {/* Close Button */}
-            <TouchableOpacity 
-              style={styles.closeButton} 
-              onPress={handleCameraClose}
-              activeOpacity={0.8}
-            >
-              <X size={24} color="white" />
-            </TouchableOpacity>
-
-            {/* Header */}
-            <View style={styles.cameraHeader}>
-              <Text style={styles.cameraHeaderTitle}>
-                {cameraMode === 'register' ? 'Face Registration' : 'Face Authentication'}
-              </Text>
-              <Text style={styles.cameraHeaderSubtitle}>
-                {cameraMode === 'register' 
-                  ? `Register ${newUserName}` 
-                  : 'Position your face in the frame'
-                }
-              </Text>
-            </View>
-
-            {/* WebCamera Component */}
-            <WebCamera
-              isVisible={true}
-              onCapture={handleCameraCapture}
-            />
-          </View>
-        </Modal>
-      )}
-
       {/* Remove User Confirmation Modal */}
       <Modal
         visible={showRemoveConfirm}
@@ -566,6 +568,44 @@ export default function FaceRecognitionScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Camera Modal - Only show on web platform */}
+      {Platform.OS === 'web' && showCamera && (
+        <Modal
+          visible={showCamera}
+          animationType="slide"
+          presentationStyle="fullScreen"
+          onRequestClose={handleCameraClose}
+        >
+          <View style={styles.cameraContainer}>
+            <TouchableOpacity 
+              style={styles.closeButton} 
+              onPress={handleCameraClose}
+              activeOpacity={0.8}
+            >
+              <X size={24} color="white" />
+            </TouchableOpacity>
+
+            <View style={styles.cameraHeader}>
+              <Text style={styles.cameraHeaderTitle}>
+                {cameraMode === 'register' ? 'Face Registration' : 'Face Authentication'}
+              </Text>
+              <Text style={styles.cameraHeaderSubtitle}>
+                {cameraMode === 'register' 
+                  ? `Register ${newUserName}` 
+                  : 'Position your face in the frame'
+                }
+              </Text>
+            </View>
+
+            {/* WebCamera Component */}
+            <WebCamera
+              isVisible={true}
+              onCapture={handleCameraCapture}
+            />
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -811,39 +851,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  cameraContainer: {
-    flex: 1,
-    backgroundColor: 'black',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 60,
-    right: 20,
-    zIndex: 10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cameraHeader: {
-    position: 'absolute',
-    top: 60,
-    left: 20,
-    right: 70,
-    zIndex: 10,
-  },
-  cameraHeaderTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 4,
-  },
-  cameraHeaderSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
   confirmModalText: {
     fontSize: 16,
     color: colors.text,
@@ -858,5 +865,34 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '500',
+  },
+  cameraContainer: {
+    flex: 1,
+    backgroundColor: 'black',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  cameraHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+  },
+  cameraHeaderTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 4,
+  },
+  cameraHeaderSubtitle: {
+    fontSize: 16,
+    color: 'white',
   },
 });
