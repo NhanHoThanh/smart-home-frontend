@@ -237,8 +237,8 @@ export default function AssistantScreen() {
               </Text>
             </View>
           </View>
-          {/*           {aiAssistant.commandHistory.slice().reverse().map((item, index) => ( */}
-          {aiAssistant.commandHistory.map((item, index) => (
+          {/* {aiAssistant.commandHistory.map((item, index) => ( */}
+            {aiAssistant.commandHistory.slice().reverse().map((item, index) => (
             <View key={index} style={styles.messageGroup}>
               <View style={styles.userMessage}>
                 <Text style={styles.userMessageText}>{item.command}</Text>
@@ -401,9 +401,7 @@ const styles = StyleSheet.create({
   userMessageText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
+
   },
   botMessage: {
     alignSelf: 'flex-start',
@@ -427,14 +425,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
-    flexShrink: 0,
   },
   botMessageText: {
     color: colors.text,
     fontSize: 16,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
+
     flex: 1,
   },
   messageTime: {
@@ -442,8 +437,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 4,
     alignSelf: 'flex-end',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-    includeFontPadding: false,
   },
   suggestionsContainer: {
     marginTop: 16,
