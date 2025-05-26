@@ -172,9 +172,7 @@ export default function FaceRecognitionTest() {
 
       <FaceCamera
         isVisible={isCameraVisible}
-        mode={mode}
         onCapture={handleCameraCapture}
-        onClose={() => setIsCameraVisible(false)}
       />
     </View>
   );

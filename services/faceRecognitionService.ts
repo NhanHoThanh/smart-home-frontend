@@ -114,7 +114,7 @@ export const registerUser = async (name: string, imageUri: string): Promise<Regi
 export const authenticateUser = async (imageUri: string): Promise<AuthenticationResult> => {
   if (USE_MOCK_DATA) {
     // Mock implementation - randomly select a user or fail
-    await simulateDelay(1500); // Simulate processing time
+    // await simulateDelay(1500); // Simulate processing time
     
     // 90% success rate - always authenticate if users exist
     if (mockUsers.length > 0) {

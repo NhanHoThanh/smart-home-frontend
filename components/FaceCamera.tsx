@@ -9,134 +9,132 @@ import WebCamera from './WebCamera';
 interface FaceCameraProps {
   isVisible: boolean;
   onCapture: (imageUri: string) => void;
-  onClose: () => void;
-  mode: 'register' | 'authenticate';
+  // onClose: () => void;
+  // mode: 'register' | 'authenticate';
 }
 
-export default function FaceCamera({ isVisible, onCapture, onClose, mode }: FaceCameraProps) {
+export default function FaceCamera({ isVisible }: FaceCameraProps) {
   // If running on web, use WebCamera component
   if (Platform.OS === 'web') {
+    console.log('Using WebCamera for web platform');
     return (
       <WebCamera 
         isVisible={isVisible}
-        onCapture={onCapture}
-        onClose={onClose}
-        mode={mode}
       />
     );
   }
 
   // For mobile platforms, use the existing expo-camera implementation
-  const [facing, setFacing] = useState<CameraType>('front');
-  const [permission, requestPermission] = useCameraPermissions();
-  const [mediaLibraryPermission, requestMediaLibraryPermission] = MediaLibrary.usePermissions();
-  const cameraRef = useRef<CameraView>(null);
+  // const [facing, setFacing] = useState<CameraType>('front');
+  // const [permission, requestPermission] = useCameraPermissions();
+  // const [mediaLibraryPermission, requestMediaLibraryPermission] = MediaLibrary.usePermissions();
+  // const cameraRef = useRef<CameraView>(null);
 
-  useEffect(() => {
-    if (isVisible && !permission?.granted) {
-      requestPermission();
-    }
-    if (isVisible && !mediaLibraryPermission?.granted) {
-      requestMediaLibraryPermission();
-    }
-  }, [isVisible]);
+  // useEffect(() => {
+  //   if (isVisible && !permission?.granted) {
+  //     requestPermission();
+  //   }
+  //   if (isVisible && !mediaLibraryPermission?.granted) {
+  //     requestMediaLibraryPermission();
+  //   }
+  // }, [isVisible]);
 
-  if (!permission) {
-    return <View />;
-  }
+  // if (!permission) {
+  //   return <View />;
+  // }
 
-  if (!permission.granted) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.permissionContainer}>
-          <Camera size={64} color={colors.textSecondary} />
-          <Text style={styles.permissionText}>Camera permission required</Text>
-          <Text style={styles.permissionSubtext}>
-            Please grant camera access to use face recognition
-          </Text>
-          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-            <Text style={styles.permissionButtonText}>Grant Permission</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
+  // if (!permission.granted) {
+  //   return (
+  //     <View style={styles.container}>
+  //       <View style={styles.permissionContainer}>
+  //         <Camera size={64} color={colors.textSecondary} />
+  //         <Text style={styles.permissionText}>Camera permission required</Text>
+  //         <Text style={styles.permissionSubtext}>
+  //           Please grant camera access to use face recognition
+  //         </Text>
+  //         <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+  //           <Text style={styles.permissionButtonText}>Grant Permission</Text>
+  //         </TouchableOpacity>
+  //         <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+  //           <Text style={styles.cancelButtonText}>Cancel</Text>
+  //         </TouchableOpacity>
+  //       </View>
+  //     </View>
+  //   );
+  // }
 
-  const takePicture = async () => {
-    if (cameraRef.current) {
-      try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.8,
-          base64: false,
-        });
+  // const takePicture = async () => {
+  //   if (cameraRef.current) {
+  //     try {
+  //       const photo = await cameraRef.current.takePictureAsync({
+  //         quality: 0.8,
+  //         base64: false,
+  //       });
         
-        if (photo?.uri) {
-          onCapture(photo.uri);
-        }
-      } catch (error) {
-        console.error('Error taking picture:', error);
-        Alert.alert('Error', 'Failed to capture image. Please try again.');
-      }
-    }
-  };
+  //       if (photo?.uri) {
+  //         onCapture(photo.uri);
+  //       }
+  //     } catch (error) {
+  //       console.error('Error taking picture:', error);
+  //       Alert.alert('Error', 'Failed to capture image. Please try again.');
+  //     }
+  //   }
+  // };
 
-  const toggleCameraFacing = () => {
-    setFacing(current => (current === 'back' ? 'front' : 'back'));
-  };
+  // const toggleCameraFacing = () => {
+  //   setFacing(current => (current === 'back' ? 'front' : 'back'));
+  // };
 
-  if (!isVisible) {
-    return null;
-  }
+  // if (!isVisible) {
+  //   return null;
+  // }
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.cameraContainer}>
-        <View style={styles.header}>
-          <Text style={styles.headerText}>
-            {mode === 'register' ? 'Register Face' : 'Authenticate'}
-          </Text>
-          <TouchableOpacity onPress={onClose}>
-            <X size={24} color="white" />
-          </TouchableOpacity>
-        </View>
+  // return (
+  //   <View style={styles.container}>
+  //     <View style={styles.cameraContainer}>
+  //       <View style={styles.header}>
+  //         <Text style={styles.headerText}>
+  //           {mode === 'register' ? 'Register Face' : 'Authenticate'}
+  //         </Text>
+  //         <TouchableOpacity onPress={onClose}>
+  //           <X size={24} color="white" />
+  //         </TouchableOpacity>
+  //       </View>
 
-        <CameraView
-          ref={cameraRef}
-          style={styles.camera}
-          facing={facing}
-        >
-          <View style={styles.overlay}>
-            <View style={styles.faceFrame} />
-            <Text style={styles.instructionText}>
-              {mode === 'register' 
-                ? 'Position your face in the frame and take a photo'
-                : 'Look at the camera for authentication'
-              }
-            </Text>
-          </View>
-        </CameraView>
+  //       <CameraView
+  //         ref={cameraRef}
+  //         style={styles.camera}
+  //         facing={facing}
+  //       >
+  //         <View style={styles.overlay}>
+  //           <View style={styles.faceFrame} />
+  //           <Text style={styles.instructionText}>
+  //             {mode === 'register' 
+  //               ? 'Position your face in the frame and take a photo'
+  //               : 'Look at the camera for authentication'
+  //             }
+  //           </Text>
+  //         </View>
+  //       </CameraView>
 
-        <View style={styles.controls}>
-          <TouchableOpacity style={styles.controlButton} onPress={toggleCameraFacing}>
-            <RotateCcw size={24} color="white" />
-          </TouchableOpacity>
+  //       <View style={styles.controls}>
+  //         <TouchableOpacity style={styles.controlButton} onPress={toggleCameraFacing}>
+  //           <RotateCcw size={24} color="white" />
+  //         </TouchableOpacity>
 
-          <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
-            <View style={styles.captureButtonInner}>
-              <CheckCircle size={32} color="white" />
-            </View>
-          </TouchableOpacity>
+  //         <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+  //           <View style={styles.captureButtonInner}>
+  //             <CheckCircle size={32} color="white" />
+  //           </View>
+  //         </TouchableOpacity>
 
-          <TouchableOpacity style={styles.controlButton} onPress={onClose}>
-            <X size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
+  //         <TouchableOpacity style={styles.controlButton} onPress={onClose}>
+  //           <X size={24} color="white" />
+  //         </TouchableOpacity>
+  //       </View>
+  //     </View>
+  //   </View>
+  // );
 }
 
 const styles = StyleSheet.create({
